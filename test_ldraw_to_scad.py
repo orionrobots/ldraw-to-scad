@@ -1,88 +1,25 @@
 from unittest import TestCase
 import mock
+import os
 
-class LDrawConverter():
-    def __init__(self):
-        self.modules = []
-
-    def make_colour(self, colour_index):
-        return "color(lego_colours[{0}])".format(colour_index)
-
-    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
-        with open(filename) as fd:
-            module_inner = self.convert_file(fd, indent=2)
-        module_name = filename.split('.', 1)[0]
-        module = [
-            "module {}() {{".format(module_name)
-        ] + module_inner + [
-            "}"
-        ]
-
-        return module + [
-            self.make_colour(colour_index),
-            "  multmatrix([",
-            "    [{0}, {1}, {2}, {3}],".format(a, b, c, x),
-            "    [{0}, {1}, {2}, {3}],".format(d, e, f, y),
-            "    [{0}, {1}, {2}, {3}],".format(g, h, i, z),
-            "    [{0}, {1}, {2}, {3}]".format(0, 0, 0, 1),
-            "  ])",
-            "  {}();".format(module_name)
-        ]
-
-    def convert_line(self, part_line, indent=0):
-        # Preserve blank lines
-        part_line = part_line.strip()
-        if part_line == '':
-            return [part_line]
-        command, rest = part_line.split(maxsplit=1)
-        result = []
-        if command == "0":
-            result.append("// {}".format(rest))
-        elif command == "1":
-            result.extend(self.handle_type_1_line(*rest.split()))
-        elif command == "3":
-            colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3 = rest.split()
-            result.append(self.make_colour(colour_index))
-            result.append("  polyhedron(points=[")
-            result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
-            result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
-            result.append("    [{0}, {1}, {2}]".format(x3, y3, z3))
-            result.append("  ], faces = [[0, 1, 2]]);")
-        elif command == "4":
-            colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 = rest.split()
-            result.append(self.make_colour(colour_index))
-            result.append("  polyhedron(points=[")
-            result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
-            result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
-            result.append("    [{0}, {1}, {2}],".format(x3, y3, z3))
-            result.append("    [{0}, {1}, {2}]".format(x4, y4, z4))
-            result.append("  ], faces = [[0, 1, 2, 3]]);")
-        if indent:
-            indent_str = ''.join(' ' * indent)
-            result = ['{i}{l}'.format(i=indent_str, l=line) for line in result]
-        return result
-
-    def convert_lines(self, lines, indent=0):
-        result = []
-        [result.extend(self.convert_line(line, indent=indent)) for line in lines]
-        return result
-
-    def convert_file(self, fd, indent=0):
-        return self.convert_lines(fd.readlines(), indent=indent)
+from ldraw_to_scad import LDrawConverter
 
 class TestLDrawConverterLine(TestCase):
-    primitive_path = "lib/ldraw/4-4edge.dat"
     def default_runner(self):
         return LDrawConverter()
 
-    def test_it_should_convert_a_comment(self):
+    def test_it_should_convert_comments(self):
         # setup
-        part_line = "0 Stud"
+        part_lines_to_test =[
+            ["0 Stud", "// Stud"],
+            ["0", "// "]
+        ]
         # Test
         converter = self.default_runner()
-        output_scad = converter.convert_line(part_line)
         # Assert
-        self.assertEqual(output_scad, ["// Stud"])
+        for line, expected in part_lines_to_test:
+            output_scad = converter.convert_line(line)
+            self.assertEqual(output_scad, [expected])
 
     def test_it_should_convert_type_1_line_into_module(self):
         # setup
@@ -92,8 +29,9 @@ class TestLDrawConverterLine(TestCase):
         # Test
         converter = self.default_runner()
         result = converter.convert_line(part_line)
+        modules = converter.get_modules()
         # Assert
-        self.assertEqual(result, [
+        self.assertEqual(modules, [
             "module simple_test() {",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
@@ -107,6 +45,8 @@ class TestLDrawConverterLine(TestCase):
             "    ], faces = [[0, 1, 2, 3]]);",
             "",
             "}",
+        ])
+        self.assertEqual(result, [
             "color(lego_colours[16])",
             "  multmatrix([",
             "    [22, 21, 20, 25],",
@@ -174,6 +114,22 @@ class TestLDrawConverterLine(TestCase):
             "  ], faces = [[0, 1, 2, 3]]);"
         ])
 
+    def test_it_should_be_able_to_find_part_path(self):
+        # WARNING: This test requires having lib/ldraw setup.
+        # setup
+        #  part tests - name, expected location
+        part_tests = [
+            ['1.dat', os.path.join('lib', 'ldraw', 'parts', '1.dat')],
+            ['4-4cyli.dat', os.path.join('lib', 'ldraw', 'p', '4-4cyli.dat')],
+            ['s\\4744s01.dat', os.path.join('lib', 'ldraw', 'parts', 's', '4744s01.dat')]
+        ]
+        # Test
+        converter = self.default_runner()
+        converter.index_library()
+
+        # Assert
+        for part_name, expected_path in part_tests:
+            self.assertEqual(converter.find_part(part_name), expected_path)
         
     def test_it_should_ignore_the_optional_line(self):
         # setup
@@ -212,6 +168,51 @@ class TestLDrawConverterFile(TestCase):
             ""
         ])
 
+
+    def test_multiple_lines_should_only_make_a_single_module_for_multiple_type_1_refs(self):
+        # setup
+        lines = [
+            "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat",
+            "1 16 2.5 2.4 2.3 2.2 2.1 2.0 1.9 1.8 1.7 1.6 1.5 1.4 simple_test.dat",
+        ]
+        # Test
+        converter = self.default_runner()
+        output = converter.convert_lines(lines)
+        modules = converter.get_modules()
+        # Assert
+        self.assertEqual(modules, [
+            "module simple_test() {",
+            "  // Simple Test File",
+            "  // Name: simple_test.dat",
+            "",
+            "  color(lego_colours[16])",
+            "    polyhedron(points=[",
+            "      [1, 1, 1],",
+            "      [1, 1, -1],",
+            "      [-1, 1, -1],",
+            "      [-1, 1, 1]",
+            "    ], faces = [[0, 1, 2, 3]]);",
+            "",
+            "}",
+        ])
+        self.assertEqual(output, [
+            "color(lego_colours[16])",
+            "  multmatrix([",
+            "    [22, 21, 20, 25],",
+            "    [19, 18, 17, 24],",
+            "    [16, 15, 14, 23],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  simple_test();",
+            "color(lego_colours[16])",
+            "  multmatrix([",
+            "    [2.2, 2.1, 2.0, 2.5],",
+            "    [1.9, 1.8, 1.7, 2.4],",
+            "    [1.6, 1.5, 1.4, 2.3],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  simple_test();",
+        ])
 
     def test_multiple_lines(self):
         # setup
