@@ -21,9 +21,9 @@ class LDrawConverter():
         return module + [
             self.make_colour(colour_index),
             "  multmatrix([",
-            "    [{0}, {1}, {2}, {3}]".format(a, b, c, x),
-            "    [{0}, {1}, {2}, {3}]".format(d, e, f, y),
-            "    [{0}, {1}, {2}, {3}]".format(g, h, i, z),
+            "    [{0}, {1}, {2}, {3}],".format(a, b, c, x),
+            "    [{0}, {1}, {2}, {3}],".format(d, e, f, y),
+            "    [{0}, {1}, {2}, {3}],".format(g, h, i, z),
             "    [{0}, {1}, {2}, {3}]".format(0, 0, 0, 1),
             "  ])",
             "  {}();".format(module_name)
@@ -107,13 +107,12 @@ class TestLDrawConverterLine(TestCase):
             "    ], faces = [[0, 1, 2, 3]]);",
             "",
             "}",
-            "color(lego_colours[16]) ",
-            "  translate([0, 0, 0])",
+            "color(lego_colours[16])",
             "  multmatrix([",
             "    [22, 21, 20, 25],",
             "    [19, 18, 17, 24],",
             "    [16, 15, 14, 23],",
-            "    [ 0,  0,  0,  1]",
+            "    [0, 0, 0, 1]",
             "  ])",
             "  simple_test();"
         ])
