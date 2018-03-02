@@ -16,12 +16,17 @@ class LDrawConverter():
             result.extend(module)
         return result
 
-    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+    def get_module_name(self, filename):
         module_name = filename.split('.', 1)[0]
-        module_name = module_name.replace('s\\', 's__')
+        module_name = module_name.replace('s\\', 's__').replace('-', '_')
+        module_name = 'n__' + module_name
+        return module_name
+
+    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+        module_name = self.get_module_name(filename)
 
         if filename not in self.modules:
-            path = self.find_part(filename)
+            path = self.find_part(filename.lower())
             with open(path) as fd:
                 module_inner = self.convert_file(fd, indent=2)
             self.modules[filename] = [

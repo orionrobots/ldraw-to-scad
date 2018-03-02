@@ -8,6 +8,21 @@ class TestLDrawConverterLine(TestCase):
     def default_runner(self):
         return LDrawConverter()
 
+    def test_it_should_make_sensible_module_names(self):
+        # Module names must be valid c identifiers - 
+        # setup
+        module_names_to_convert = [
+            ["stud.dat", "n__stud"],
+            ["s\\stuff.dat", "n__s__stuff"],
+            ["4744.dat", "n__4744"],
+            ["2-4cyli.dat", "n__2_4cyli"]
+        ]
+        # test
+        converter = self.default_runner()
+        # assert
+        for item, expected in module_names_to_convert:
+            self.assertEqual(converter.get_module_name(item), expected)
+
     def test_it_should_convert_comments(self):
         # setup
         part_lines_to_test =[
@@ -32,7 +47,7 @@ class TestLDrawConverterLine(TestCase):
         modules = converter.get_modules()
         # Assert
         self.assertEqual(modules, [
-            "module simple_test() {",
+            "module n__simple_test() {",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "",
@@ -54,7 +69,7 @@ class TestLDrawConverterLine(TestCase):
             "    [16, 15, 14, 23],",
             "    [0, 0, 0, 1]",
             "  ])",
-            "  simple_test();"
+            "  n__simple_test();"
         ])
 
     def test_it_should_ignore_type_2_line(self):
@@ -181,7 +196,7 @@ class TestLDrawConverterFile(TestCase):
         modules = converter.get_modules()
         # Assert
         self.assertEqual(modules, [
-            "module simple_test() {",
+            "module n__simple_test() {",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "",
@@ -203,7 +218,7 @@ class TestLDrawConverterFile(TestCase):
             "    [16, 15, 14, 23],",
             "    [0, 0, 0, 1]",
             "  ])",
-            "  simple_test();",
+            "  n__simple_test();",
             "color(lego_colours[16])",
             "  multmatrix([",
             "    [2.2, 2.1, 2.0, 2.5],",
@@ -211,7 +226,7 @@ class TestLDrawConverterFile(TestCase):
             "    [1.6, 1.5, 1.4, 2.3],",
             "    [0, 0, 0, 1]",
             "  ])",
-            "  simple_test();",
+            "  n__simple_test();",
         ])
 
     def test_multiple_lines(self):
