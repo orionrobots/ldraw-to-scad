@@ -1,0 +1,10 @@
+0 Simple MPD File
+0 Name: mdp_test.dat
+
+4 16  1 1  1  1 1 -1 -1 1 -1 -1 1  1
+1 16 225 224 223 222 221 220 219 218 217 216 215 214 mdr_inner.ldr
+
+0 NOFILE
+0 FILE mdr_inner.ldr
+1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat
+0 NOFILE
