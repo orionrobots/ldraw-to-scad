@@ -36,10 +36,11 @@ class TestLDrawConverterLine(TestCase):
             ["0", "// "]
         ]
         converter, module = self.default_runner()
+        converter.current_module = module
         # Test
         # Assert
         for line, expected in part_lines_to_test:
-            output_scad = converter.convert_line(module, line)
+            output_scad = converter.convert_line(line)
             self.assertEqual(output_scad, [expected])
 
     def test_it_should_convert_type_1_line_into_module_ref(self):
@@ -49,7 +50,8 @@ class TestLDrawConverterLine(TestCase):
         part_line = "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat"
         converter, module = self.default_runner()
         # Test
-        result = converter.convert_line(module, part_line)
+        converter.current_module = module
+        result = converter.convert_line(part_line)
         # Assert
         print(module.dependancies)
         self.assertIn('n__simple_test', module.dependancies)
@@ -69,11 +71,12 @@ class TestLDrawConverterLine(TestCase):
         part_line = "2 24 40 96 -20 -40 96 -20"
         converter, module = self.default_runner()
         # test
-        output_scad = converter.convert_line(module, part_line)
+        converter.current_module = module
+        output_scad = converter.convert_line(part_line)
         # assert
         self.assertEqual(output_scad, [])
         # With indent
-        output_scad = converter.convert_line(module, part_line, indent=2)
+        output_scad = converter.convert_line(part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [])
 
@@ -82,7 +85,8 @@ class TestLDrawConverterLine(TestCase):
         part_line = "3 16 -2.017 -35.943 0 0 -35.942 -3.6 2.017 -35.943 0"
         converter, module = self.default_runner()
         # test
-        output_scad = converter.convert_line(module, part_line)
+        converter.current_module = module
+        output_scad = converter.convert_line(part_line)
         # assert
         self.assertEqual(output_scad, [
             "color(lego_colours[16])",
@@ -93,7 +97,7 @@ class TestLDrawConverterLine(TestCase):
             "  ], faces = [[0, 1, 2]]);"
         ])
         # test with indent
-        output_scad = converter.convert_line(module, part_line, indent=2)
+        output_scad = converter.convert_line(part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [
             "  color(lego_colours[16])",
@@ -109,7 +113,8 @@ class TestLDrawConverterLine(TestCase):
         part_line = "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0"
         converter, module = self.default_runner()
         # Test
-        output_scad = converter.convert_line(converter, part_line)
+        converter.current_module = module
+        output_scad = converter.convert_line(part_line)
         # Assert
         self.assertEqual(output_scad, [
             "color(lego_colours[16])",
@@ -137,13 +142,14 @@ class TestLDrawConverterLine(TestCase):
         # Assert
         for part_name, expected_path in part_tests:
             self.assertEqual(converter.find_part(part_name), expected_path)
-        
+
     def test_it_should_ignore_the_optional_line(self):
         # setup
         part_line = "5 24 0.7071 0 -0.7071 0.7071 1 -0.7071 0.9239 0 -0.3827 0.3827 0 -0.9239"
         # test
         converter, module = self.default_runner()
-        output_scad = converter.convert_line(module, part_line)
+        converter.current_module = module
+        output_scad = converter.convert_line(part_line)
         # assert
         self.assertEqual(output_scad, [])
 
@@ -232,7 +238,7 @@ class TestLDrawConverterLine(TestCase):
                 "      [-1, 1, -1],",
                 "      [-1, 1, 1]",
                 "    ], faces = [[0, 1, 2, 3]]);",
-                "  "
+                "  ",
                 "}",
                 "color(lego_colours[16])",
                 "  multmatrix([",
@@ -245,58 +251,82 @@ class TestLDrawConverterLine(TestCase):
             ]
         )
 
-    # def test_multiple_lines_should_only_make_a_single_module_for_multiple_type_1_refs(self):
-    #     # setup
-    #     lines = [
-    #         "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat",
-    #         "1 16 2.5 2.4 2.3 2.2 2.1 2.0 1.9 1.8 1.7 1.6 1.5 1.4 simple_test.dat",
-    #     ]
-    #     # Test
-    #     converter, _ = self.default_runner()
-    #     result = converter.process_main(lines)
-    #     # Assert
-    #     self.assertEqual(result, [
-    #         "module n__simple_test() {",
-    #         "  // Simple Test File",
-    #         "  // Name: simple_test.dat",
-    #         "",
-    #         "  color(lego_colours[16])",
-    #         "    polyhedron(points=[",
-    #         "      [1, 1, 1],",
-    #         "      [1, 1, -1],",
-    #         "      [-1, 1, -1],",
-    #         "      [-1, 1, 1]",
-    #         "    ], faces = [[0, 1, 2, 3]]);",
-    #         "",
-    #         "}",
-    #         "color(lego_colours[16])",
-    #         "  multmatrix([",
-    #         "    [22, 21, 20, 25],",
-    #         "    [19, 18, 17, 24],",
-    #         "    [16, 15, 14, 23],",
-    #         "    [0, 0, 0, 1]",
-    #         "  ])",
-    #         "  n__simple_test();",
-    #         "color(lego_colours[16])",
-    #         "  multmatrix([",
-    #         "    [2.2, 2.1, 2.0, 2.5],",
-    #         "    [1.9, 1.8, 1.7, 2.4],",
-    #         "    [1.6, 1.5, 1.4, 2.3],",
-    #         "    [0, 0, 0, 1]",
-    #         "  ])",
-    #         "  n__simple_test();",
-    #     ])
+    def test_multiple_lines_should_only_make_a_single_module_for_multiple_type_1_refs(self):
+        # setup
+        lines = [
+            "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat",
+            "1 16 2.5 2.4 2.3 2.2 2.1 2.0 1.9 1.8 1.7 1.6 1.5 1.4 simple_test.dat",
+        ]
+        # Test
+        converter, _ = self.default_runner()
+        result = converter.process_main(lines)
+        # Assert
+        self.assertEqual(result, [
+            "module n__simple_test() {",
+            "  // Simple Test File",
+            "  // Name: simple_test.dat",
+            "  ",
+            "  color(lego_colours[16])",
+            "    polyhedron(points=[",
+            "      [1, 1, 1],",
+            "      [1, 1, -1],",
+            "      [-1, 1, -1],",
+            "      [-1, 1, 1]",
+            "    ], faces = [[0, 1, 2, 3]]);",
+            "  ",
+            "}",
+            "color(lego_colours[16])",
+            "  multmatrix([",
+            "    [22, 21, 20, 25],",
+            "    [19, 18, 17, 24],",
+            "    [16, 15, 14, 23],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  n__simple_test();",
+            "color(lego_colours[16])",
+            "  multmatrix([",
+            "    [2.2, 2.1, 2.0, 2.5],",
+            "    [1.9, 1.8, 1.7, 2.4],",
+            "    [1.6, 1.5, 1.4, 2.3],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  n__simple_test();",
+        ])
 
     # def test_try_simplest_mpd(self):
     #     # setup
-    #     mpd_lines = [
+    #     lines = [
     #         # 1 - ref the mpd
-    #         # 0 nofile
-    #         # 0 mpdfile
-    #         # 1 ref =
+    #         "1 16 225 224 223 222 221 220 219 218 217 216 215 214 mdr_inner.ldr",
+    #         "0 NOFILE",
+    #         "0 FILE mdr_inner.ldr",
+    #         "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0",
+    #         "0 NOFILE"
     #     ]
     #     # test
+    #     converter, _ = self.default_runner()
+    #     result = converter.process_main(lines)
     #     # assert
+    #     self.assertEqual(result, [
+    #         "module n__mdr_inner() {",
+    #         "  color(lego_colours[16])",
+    #         "    polyhedron(points=[",
+    #         "      [1, 1, 0],",
+    #         "      [0.9239, 1, 0.3827],",
+    #         "      [0.9239, 0, 0.3827],",
+    #         "      [1, 0, 0]",
+    #         "    ], faces = [[0, 1, 2, 3]]);",
+    #         "  ",
+    #         "}",
+    #         "color(lego_colours[16])",
+    #         "  multmatrix([",
+    #         "    [222, 221, 220, 225],",
+    #         "    [219, 218, 217, 224],",
+    #         "    [216, 215, 214, 223],",
+    #         "    [0, 0, 0, 1]",
+    #         "  ])",
+    #         "  n__mdr_inner();",
+    #     ])
 
 
 

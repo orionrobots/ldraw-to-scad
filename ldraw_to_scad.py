@@ -49,10 +49,13 @@ class LDrawModuleConverter:
         self.modules_queue = queue.Queue()
         # Path search
         self.index = {}
+        self.current_module = None
 
     def process_lines(self, module, lines, indent=0):
+        self.current_module = module
         result = []
-        [result.extend(self.convert_line(module, line, indent=indent)) for line in lines]
+        [result.extend(self.convert_line(line, indent=indent))
+            for line in lines]
         module.add_lines(result)
 
     def process_main(self, input_lines):
@@ -94,14 +97,27 @@ class LDrawModuleConverter:
     def make_colour(self, colour_index):
         return "color(lego_colours[{0}])".format(colour_index)
 
-    def handle_type_1_line(self, module, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+    def handle_type_0_line(self, rest):
+        # Ignore NOFILE for now
+        if rest.startswith("NOFILE"):
+            return False, ""
+        # Handle the file case
+        if rest.startswith("FILE"):
+            _, filename = rest.split()
+            self.current_module = Module(filename=filename)
+            module_name = Module.make_module_name(filename)
+            self.modules[module_name] = self.current_module
+            return True, ''
+        return False, "// {}".format(rest)
+
+    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
         # Is this a new module?
         if module_name not in self.modules:
             # Create it
             self.modules[module_name] = Module(filename)
         # Add to deps
-        module.dependancies.add(module_name)
+        self.current_module.dependancies.add(module_name)
         
         return [
             self.make_colour(colour_index),
@@ -114,7 +130,7 @@ class LDrawModuleConverter:
             "  {}();".format(module_name)
         ]
 
-    def convert_line(self, module, part_line, indent=0):
+    def convert_line(self, part_line, indent=0):
         # Preserve blank lines
         part_line = part_line.strip()
         if part_line == '':
@@ -126,10 +142,12 @@ class LDrawModuleConverter:
             rest = ''
         result = []
         if command == "0":
-            result.append("// {}".format(rest))
+            is_new_module, data = self.handle_type_0_line(rest)
+            if not is_new_module:
+                result.append(data)
         elif command == "1":
             try:
-                result.extend(self.handle_type_1_line(module, *rest.split()))
+                result.extend(self.handle_type_1_line(*rest.split()))
             except TypeError:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
         elif command == "3":
