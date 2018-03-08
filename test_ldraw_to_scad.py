@@ -2,8 +2,7 @@ from unittest import TestCase
 import mock
 import os
 
-from ldraw_to_scad import LDrawConverter, \
-    LDrawModuleConverter, Module
+from ldraw_to_scad import LDrawConverter, Module
 
 class TestModule(TestCase):
     def default_runner(self, filename='a_module'):
@@ -24,10 +23,10 @@ class TestModule(TestCase):
             self.assertEqual(Module.make_module_name(item), expected)
 
 
-class TestLDrawConverterLine(TestCase):
+class TestLDrawConverter(TestCase):
     def default_runner(self, module_filename="__main__"):
         module = Module(module_filename)
-        return LDrawModuleConverter(), module
+        return LDrawConverter(), module
 
     def test_it_should_convert_comments(self):
         # setup
@@ -293,40 +292,41 @@ class TestLDrawConverterLine(TestCase):
             "  n__simple_test();",
         ])
 
-    # def test_try_simplest_mpd(self):
-    #     # setup
-    #     lines = [
-    #         # 1 - ref the mpd
-    #         "1 16 225 224 223 222 221 220 219 218 217 216 215 214 mdr_inner.ldr",
-    #         "0 NOFILE",
-    #         "0 FILE mdr_inner.ldr",
-    #         "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0",
-    #         "0 NOFILE"
-    #     ]
-    #     # test
-    #     converter, _ = self.default_runner()
-    #     result = converter.process_main(lines)
-    #     # assert
-    #     self.assertEqual(result, [
-    #         "module n__mdr_inner() {",
-    #         "  color(lego_colours[16])",
-    #         "    polyhedron(points=[",
-    #         "      [1, 1, 0],",
-    #         "      [0.9239, 1, 0.3827],",
-    #         "      [0.9239, 0, 0.3827],",
-    #         "      [1, 0, 0]",
-    #         "    ], faces = [[0, 1, 2, 3]]);",
-    #         "  ",
-    #         "}",
-    #         "color(lego_colours[16])",
-    #         "  multmatrix([",
-    #         "    [222, 221, 220, 225],",
-    #         "    [219, 218, 217, 224],",
-    #         "    [216, 215, 214, 223],",
-    #         "    [0, 0, 0, 1]",
-    #         "  ])",
-    #         "  n__mdr_inner();",
-    #     ])
+    def test_try_simplest_mpd(self):
+        # setup
+        lines = [
+            # 1 - ref the mpd
+            "1 16 225 224 223 222 221 220 219 218 217 216 215 214 mdr_inner.ldr",
+            "0 NOFILE",
+            "0 FILE mdr_inner.ldr",
+            "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0",
+            "0 NOFILE"
+        ]
+        # test
+        converter, _ = self.default_runner()
+        result = converter.process_main(lines)
+        # assert
+        self.assertEqual(result, [
+            "module n__mdr_inner() {",
+            "  color(lego_colours[16])",
+            "    polyhedron(points=[",
+            "      [1, 1, 0],",
+            "      [0.9239, 1, 0.3827],",
+            "      [0.9239, 0, 0.3827],",
+            "      [1, 0, 0]",
+            "    ], faces = [[0, 1, 2, 3]]);",
+            "  ",
+            "}",
+            "color(lego_colours[16])",
+            "  multmatrix([",
+            "    [222, 221, 220, 225],",
+            "    [219, 218, 217, 224],",
+            "    [216, 215, 214, 223],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  n__mdr_inner();",
+            "",
+        ])
 
 
 
