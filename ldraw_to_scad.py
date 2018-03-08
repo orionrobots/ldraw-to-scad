@@ -54,7 +54,12 @@ class LDrawConverter:
     def process_lines(self, module, lines):
         self.current_module = module
         result = []
+        first_line = True
         for line in lines:
+            if first_line and line.startswith("0 FILE"):
+                if module.filename == "__main__":
+                    continue
+            first_line = False
             converted = self.convert_line(line)
             self.current_module.add_lines(converted)
 
@@ -203,11 +208,9 @@ def main():
     args = parser.parse_args()
     convert = LDrawConverter()
     with open(args.ldraw_file) as fd:
-        result = convert.convert_file(fd)
+        result = convert.process_main(fd)
     with open(args.output_file, 'w') as fdw:
-        fdw.write('\n'.join(convert.get_modules()))
         fdw.write('\n'.join(result))
-
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
+0 FILE mdp_test.dat
 0 Simple MPD File
 0 Name: mdp_test.dat
 
-4 16  1 1  1  1 1 -1 -1 1 -1 -1 1  1
 1 16 225 224 223 222 221 220 219 218 217 216 215 214 mdr_inner.ldr
 
 0 NOFILE

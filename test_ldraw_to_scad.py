@@ -328,59 +328,52 @@ class TestLDrawConverter(TestCase):
             "",
         ])
 
-
-
-
-# class TestMpdSupport(TestCase):
-#     def default_runner(self):
-#         return LDrawConverter()
-
-#     def test_loading_an_mpd(self):
-#         # Setup
-#         mpd_filename = "mpd_test.dat"
-#         # Test
-#         converter = self.default_runner()
-#         with open(mpd_filename) as fd:
-#             output = converter.convert_file(fd)
-#         # Assert
-#         self.assertEqual(converter.get_modules(),
-#         [
-#             "module n__simple_test() {",
-#             "  // Simple Test File",
-#             "  // Name: simple_test.dat",
-#             "",
-#             "  color(lego_colours[16])",
-#             "    polyhedron(points=[",
-#             "      [1, 1, 1],",
-#             "      [1, 1, -1],",
-#             "      [-1, 1, -1],",
-#             "      [-1, 1, 1]",
-#             "    ], faces = [[0, 1, 2, 3]]);",
-#             "",
-#             "}",
-#             "module n__mdr_inner() {",
-#             "  color(lego_colours[16])",
-#             "    multmatrix([",
-#             "      [22, 21, 20, 25],",
-#             "      [19, 18, 17, 24],",
-#             "      [16, 15, 14, 23],",
-#             "      [0, 0, 0, 1]",
-#             "    ])",
-#             "    n__simple_test();",
-#             "}"
-#         ])
-#         self.assertEqual(output, [
-#             "// Simple MPD File",
-#             "",
-#             "// Name: mdp_test.dat",
-#             "",
-#             "  color(lego_colours[16])",
-#             "    multmatrix([",
-#             "      [22, 21, 20, 25],",
-#             "      [19, 18, 17, 24],",
-#             "      [16, 15, 14, 23],",
-#             "      [0, 0, 0, 1]",
-#             "    ])",
-#             "    n__simple_test();",
-#             "",
-#         ])
+    def test_loading_an_mpd(self):
+        # Setup
+        mpd_filename = "mpd_test.dat"
+        # Test
+        converter, _ = self.default_runner()
+        with open(mpd_filename) as fd:
+            output = converter.process_main(fd)
+        # Assert
+        self.maxDiff = None
+        self.assertListEqual(output,
+        [
+            "module n__simple_test() {",
+            "  // Simple Test File",
+            "  // Name: simple_test.dat",
+            "  ",
+            "  color(lego_colours[16])",
+            "    polyhedron(points=[",
+            "      [1, 1, 1],",
+            "      [1, 1, -1],",
+            "      [-1, 1, -1],",
+            "      [-1, 1, 1]",
+            "    ], faces = [[0, 1, 2, 3]]);",
+            "  ",
+            "}",
+            "module n__mdr_inner() {",
+            "  color(lego_colours[16])",
+            "    multmatrix([",
+            "      [22, 21, 20, 25],",
+            "      [19, 18, 17, 24],",
+            "      [16, 15, 14, 23],",
+            "      [0, 0, 0, 1]",
+            "    ])",
+            "    n__simple_test();",
+            "  ",
+            "}",
+            "// Simple MPD File",
+            "// Name: mdp_test.dat",
+            "",
+            "color(lego_colours[16])",
+            "  multmatrix([",
+            "    [222, 221, 220, 225],",
+            "    [219, 218, 217, 224],",
+            "    [216, 215, 214, 223],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  n__mdr_inner();",
+            "",
+            ""
+        ])
