@@ -13,7 +13,7 @@ class Module():
     @staticmethod
     def make_module_name(filename):
         module_name = filename.split('.', 1)[0]
-        module_name = module_name.replace('s\\', 's__').replace('-', '_')
+        module_name = module_name.replace('\\', '__').replace('-', '_')
         return 'n__' + module_name
 
     def get_module_name(self):
@@ -68,7 +68,6 @@ class LDrawConverter:
         self.modules[main_module.get_module_name()] = main_module
         self.modules_queue.put(main_module)
         self.process_lines(main_module, input_lines)
-        print("Main module lines is", len(main_module.lines))
         completed = []
         while not self.modules_queue.empty():
             # Get the next queued module
@@ -79,7 +78,8 @@ class LDrawConverter:
             # Have we loaded it?
             if not current_module.lines:
                 print("Main module lines is", len(main_module.lines))
-                with open(current_module.filename) as fd:
+                real_filename = self.find_part(current_module.filename)
+                with open(real_filename) as fd:
                     lines = fd.readlines()
                 self.process_lines(current_module, lines)
             # Check - have we covered it dependancies
@@ -190,15 +190,23 @@ class LDrawConverter:
             for item in os.listdir(whole_path):
                 if item.endswith('.dat'):
                     self.index[item] = os.path.join(whole_path, item)
-        s_path = os.path.join(library_root, 'parts', 's') 
-        for item in os.listdir(s_path):
-            if item.endswith('.dat'):
-                self.index['s\\'+item] = os.path.join(s_path, item)
+        special_subs = {
+            's': os.path.join(library_root, 'parts', 's'),
+            '48' : os.path.join(library_root, 'p', '48')
+        }
+        for prefix, s_path in special_subs.items():
+            for item in os.listdir(s_path):
+                if item.endswith('.dat'):
+                    self.index[prefix + '\\'+item] = os.path.join(s_path, item)
 
     def find_part(self, part_name):
         if not self.index:
             self.index_library()
-        return self.index[part_name]
+        try:
+            filename = self.index[part_name]
+        except KeyError:
+            filename = self.index[part_name.lower()]
+        return filename
 
 
 def main():
