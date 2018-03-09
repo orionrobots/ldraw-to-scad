@@ -100,7 +100,9 @@ class LDrawConverter:
         return output_lines
 
     def make_colour(self, colour_index):
-        return "color(lego_colours[{0}])".format(colour_index)
+        if colour_index == "16":
+            return []
+        return ["color(lego_colours[{0}])".format(colour_index)]
 
     def handle_type_0_line(self, rest):
         # Ignore NOFILE for now
@@ -124,8 +126,7 @@ class LDrawConverter:
         # Add to deps
         self.current_module.dependancies.add(module_name)
         
-        return [
-            self.make_colour(colour_index),
+        return self.make_colour(colour_index) + [
             "  multmatrix([",
             "    [{0}, {1}, {2}, {3}],".format(a, b, c, x),
             "    [{0}, {1}, {2}, {3}],".format(d, e, f, y),
@@ -157,7 +158,7 @@ class LDrawConverter:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
         elif command == "3":
             colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3 = rest.split()
-            result.append(self.make_colour(colour_index))
+            result.extend(self.make_colour(colour_index))
             result.append("  polyhedron(points=[")
             result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
             result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
@@ -165,7 +166,7 @@ class LDrawConverter:
             result.append("  ], faces = [[0, 1, 2]]);")
         elif command == "4":
             colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 = rest.split()
-            result.append(self.make_colour(colour_index))
+            result.extend(self.make_colour(colour_index))
             result.append("  polyhedron(points=[")
             result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
             result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))

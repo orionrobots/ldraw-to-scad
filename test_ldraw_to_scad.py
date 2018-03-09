@@ -65,6 +65,29 @@ class TestLDrawConverter(TestCase):
             "  n__simple_test();"
         ])
 
+
+    def test_it_should_convert_type_1_16_with_no_colour(self):
+        # setup
+        # This is a silly matrix - but the components are easy to pick out
+        #      1 <colour> x  y  z  a  b  c  d  e  f  g  h  i <file>
+        part_line = "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat"
+        converter, module = self.default_runner()
+        # Test
+        converter.current_module = module
+        result = converter.convert_line(part_line)
+        # Assert
+        print(module.dependancies)
+        self.assertIn('n__simple_test', module.dependancies)
+        self.assertEqual(result, [
+            "  multmatrix([",
+            "    [22, 21, 20, 25],",
+            "    [19, 18, 17, 24],",
+            "    [16, 15, 14, 23],",
+            "    [0, 0, 0, 1]",
+            "  ])",
+            "  n__simple_test();"
+        ])
+
     def test_it_should_ignore_type_2_line(self):
         # setup
         part_line = "2 24 40 96 -20 -40 96 -20"
