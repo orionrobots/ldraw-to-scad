@@ -1,4 +1,6 @@
 lib/ldraw/
 __pycache__/
 .vscode/
-
+test_anim/
+.cache/
+pytestdebug.log
