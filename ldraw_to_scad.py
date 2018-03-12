@@ -77,7 +77,6 @@ class LDrawConverter:
                 continue
             # Have we loaded it?
             if not current_module.lines:
-                print("Main module lines is", len(main_module.lines))
                 real_filename = self.find_part(current_module.filename)
                 with open(real_filename) as fd:
                     lines = fd.readlines()
@@ -107,18 +106,22 @@ class LDrawConverter:
     def handle_type_0_line(self, rest):
         # Ignore NOFILE for now
         if rest.startswith("NOFILE"):
-            return False, ""
+            return None
         # Handle the file case
         if rest.startswith("FILE"):
             _, filename = rest.split()
             self.current_module = Module(filename=filename)
             module_name = Module.make_module_name(filename)
             self.modules[module_name] = self.current_module
-            return True, ''
-        return False, "// {}".format(rest)
+            return None
+        elif rest.startswith("!"):
+            return None
+        return "// {}".format(rest)
 
     def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
+        if module_name == "n__4_4_edge":
+            return []
         # Is this a new module?
         if module_name not in self.modules:
             # Create it
@@ -148,8 +151,8 @@ class LDrawConverter:
             rest = ''
         result = []
         if command == "0":
-            is_new_module, data = self.handle_type_0_line(rest)
-            if not is_new_module:
+            data = self.handle_type_0_line(rest)
+            if data:
                 result.append(data)
         elif command == "1":
             try:

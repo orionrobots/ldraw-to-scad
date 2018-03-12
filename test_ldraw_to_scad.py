@@ -42,6 +42,25 @@ class TestLDrawConverter(TestCase):
             output_scad = converter.convert_line(line)
             self.assertEqual(output_scad, [expected])
 
+
+    def test_it_should_remove_0_meta_commands(self):
+        # setup
+        lines =[
+            "0 !META stuff",
+            "0 Normal Comment"
+        ]
+        converter, module = self.default_runner()
+        converter.current_module = module
+        # Test
+        converter.process_lines(module, lines)
+        # Assert
+        self.assertListEqual(
+            module.lines,
+            [
+                "// Normal Comment"
+            ]
+        )
+
     def test_it_should_convert_type_1_line_into_module_ref(self):
         # setup
         # This is a silly matrix - but the components are easy to pick out
@@ -65,6 +84,20 @@ class TestLDrawConverter(TestCase):
             "  n__simple_test();"
         ])
 
+
+    def test_it_should_ignore_type_1_ref_to_4_4_edge(self):
+        # setup
+        # This is a silly matrix - but the components are easy to pick out
+        #      1 <colour> x  y  z  a  b  c  d  e  f  g  h  i <file>
+        part_line = "1 1 25 24 23 22 21 20 19 18 17 16 15 14 4_4_edge.dat"
+        converter, module = self.default_runner()
+        # Test
+        converter.current_module = module
+        result = converter.convert_line(part_line)
+        # Assert
+        print(module.dependancies)
+        self.assertNotIn('n__4_4_edge', module.dependancies)
+        self.assertEqual(result, [])
 
     def test_it_should_convert_type_1_16_with_no_colour(self):
         # setup
@@ -236,7 +269,7 @@ class TestLDrawConverter(TestCase):
             "    [-1, 1, -1],",
             "    [-1, 1, 1]",
             "  ], faces = [[0, 1, 2, 3]]);",
-            ""
+            "",
         ])
     
     def test_it_process_type_1_line_into_module(self):
@@ -338,7 +371,6 @@ class TestLDrawConverter(TestCase):
             "      [0.9239, 0, 0.3827],",
             "      [1, 0, 0]",
             "    ], faces = [[0, 1, 2, 3]]);",
-            "  ",
             "}",
             "color(lego_colours[1])",
             "  multmatrix([",
@@ -348,7 +380,6 @@ class TestLDrawConverter(TestCase):
             "    [0, 0, 0, 1]",
             "  ])",
             "  n__mdr_inner();",
-            "",
         ])
 
     def test_loading_an_mpd(self):
@@ -384,7 +415,6 @@ class TestLDrawConverter(TestCase):
             "      [0, 0, 0, 1]",
             "    ])",
             "    n__simple_test();",
-            "  ",
             "}",
             "// Simple MPD File",
             "// Name: mdp_test.dat",
@@ -397,6 +427,5 @@ class TestLDrawConverter(TestCase):
             "    [0, 0, 0, 1]",
             "  ])",
             "  n__mdr_inner();",
-            "",
             ""
         ])
