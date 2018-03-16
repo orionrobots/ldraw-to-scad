@@ -2,7 +2,71 @@ import os
 import argparse
 import queue
 
-class Module():
+ldraw_path = os.getenv('LDRAW_LIB', os.path.join('lib', 'ldraw'))
+
+class ColourConverter:
+    def __init__(self):
+        self.colours = {}
+
+    def read_ldconfig_file(self):
+        filename = os.path.join(ldraw_path, 'LDConfig.ldr')
+        with open(filename) as fd:
+            self.parse_colour_lines(fd)
+
+    def colour_from_hex(self, hex):
+        r, g, b = hex[1:3], hex[3:5], hex[5:7]
+        r, g, b = int(r, 16), int(g, 16), int(b, 16)
+        return r,g,b
+        
+    def parse_colour_lines(self, text_lines):
+        current_colour = {}
+        for line in text_lines:
+            try:
+                if not line or not line.strip():
+                    continue
+                cmd, rest = line.split(' ', 1)
+                if rest.startswith("!COLOUR"):
+                    items = rest.split()
+                    name = items[1]
+                    params = items[2:]
+                    if 'CHROME' in params:
+                        chrome = True
+                        params.remove('CHROME')
+                    if 'PEARLESCENT' in params:
+                        pearlescent = True
+                        params.remove('PEARLESCENT')
+                    if 'METAL' in params:
+                        metal = True
+                        params.remove('METAL')
+                    params = [params[i:i+2] for i in range(0, len(params), 2)]
+                    params = dict(params)
+                    code = int(params['CODE'])
+
+                    current_colour = {
+                        'name': name,
+                        'code': code,
+                        'value': self.colour_from_hex(params['VALUE']),
+                        'edge': self.colour_from_hex(params['EDGE'])
+                    }
+                    self.colours[code] = current_colour
+            except:
+                print("Error parsing line: '{}'".format(line))
+                raise
+
+    def get_lines(self):
+        lines = []
+        for colour in self.colours:
+            r, g, b = colour['value']
+            line = 'colour{n} = [{r}, {g}, {b}];'.format(
+                n=colour['code'],
+                r=round(r/255, 2),
+                g=round(g/255, 2),
+                b=round(b/255, 2)
+            )
+            lines.append(line)
+        return lines
+
+class Module:
     def __init__(self, filename):
         self.filename = filename
         self.lines = []
@@ -101,7 +165,7 @@ class LDrawConverter:
     def make_colour(self, colour_index):
         if colour_index == "16":
             return []
-        return ["color(lego_colours[{0}])".format(colour_index)]
+        return ["color(colour{0})".format(colour_index)]
 
     def handle_type_0_line(self, rest):
         # Ignore NOFILE for now
@@ -120,7 +184,7 @@ class LDrawConverter:
 
     def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
-        if module_name == "n__4_4_edge":
+        if module_name == "n__4_4edge":
             return []
         # Is this a new module?
         if module_name not in self.modules:
@@ -218,10 +282,13 @@ def main():
     parser.add_argument('ldraw_file', metavar='FILENAME')
     parser.add_argument('output_file', metavar='OUTPUT_FILENAME')
     args = parser.parse_args()
+    colours = ColourConverter()
+    colours.read_ldconfig_file()
     convert = LDrawConverter()
     with open(args.ldraw_file) as fd:
         result = convert.process_main(fd)
     with open(args.output_file, 'w') as fdw:
+        fdw.write('\n'.join(colours.get_lines()))
         fdw.write('\n'.join(result))
 
 
