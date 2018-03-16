@@ -6,7 +6,7 @@ ldraw_path = os.getenv('LDRAW_LIB', os.path.join('lib', 'ldraw'))
 
 class ColourConverter:
     def __init__(self):
-        self.colours = {}
+        self.colours = []
 
     def read_ldconfig_file(self):
         filename = os.path.join(ldraw_path, 'LDConfig.ldr')
@@ -22,22 +22,19 @@ class ColourConverter:
         current_colour = {}
         for line in text_lines:
             try:
-                if not line or not line.strip():
+                line = line.strip()
+                if not line or line=='0':
                     continue
                 cmd, rest = line.split(' ', 1)
                 if rest.startswith("!COLOUR"):
                     items = rest.split()
                     name = items[1]
                     params = items[2:]
-                    if 'CHROME' in params:
-                        chrome = True
-                        params.remove('CHROME')
-                    if 'PEARLESCENT' in params:
-                        pearlescent = True
-                        params.remove('PEARLESCENT')
-                    if 'METAL' in params:
-                        metal = True
-                        params.remove('METAL')
+
+                    specials = ['CHROME', 'PEARLESCENT', 'METAL', 'RUBBER']
+                    for special in specials:
+                        if special in params:
+                            params.remove(special)
                     params = [params[i:i+2] for i in range(0, len(params), 2)]
                     params = dict(params)
                     code = int(params['CODE'])
@@ -48,7 +45,7 @@ class ColourConverter:
                         'value': self.colour_from_hex(params['VALUE']),
                         'edge': self.colour_from_hex(params['EDGE'])
                     }
-                    self.colours[code] = current_colour
+                    self.colours.append(current_colour)
             except:
                 print("Error parsing line: '{}'".format(line))
                 raise

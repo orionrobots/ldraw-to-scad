@@ -31,6 +31,7 @@ class TestColourConverter(TestCase):
         sample = [
             "",
             "  ",
+            "0",
             "0 // LDraw Solid Colours",
             "0                              // LEGOID  26 - Black",
             "0 !COLOUR Black                CODE   0   VALUE #05131D   EDGE #595959",
