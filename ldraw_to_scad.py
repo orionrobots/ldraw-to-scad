@@ -192,7 +192,8 @@ class LDrawConverter:
                     self.index[item] = os.path.join(whole_path, item)
         special_subs = {
             's': os.path.join(library_root, 'parts', 's'),
-            '48' : os.path.join(library_root, 'p', '48')
+            '48' : os.path.join(library_root, 'p', '48'),
+            '8' : os.path.join(library_root, 'p', '8')
         }
         for prefix, s_path in special_subs.items():
             for item in os.listdir(s_path):
