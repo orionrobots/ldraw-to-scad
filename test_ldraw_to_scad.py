@@ -30,6 +30,7 @@ class TestLDrawConverter(TestCase):
 
     def test_it_should_convert_comments(self):
         # setup
+        bfc = {'ccw': False, 'invertnext': False}
         part_lines_to_test =[
             ["0 Stud", "// Stud"],
             ["0", "// "]
@@ -39,18 +40,19 @@ class TestLDrawConverter(TestCase):
         # Test
         # Assert
         for line, expected in part_lines_to_test:
-            output_scad = converter.convert_line(line)
+            output_scad = converter.convert_line(bfc, line)
             self.assertEqual(output_scad, [expected])
 
     def test_it_should_convert_type_1_line_into_module_ref(self):
         # setup
         # This is a silly matrix - but the components are easy to pick out
         #      1 <colour> x  y  z  a  b  c  d  e  f  g  h  i <file>
+        bfc = {'ccw': False, 'invertnext': False}
         part_line = "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat"
         converter, module = self.default_runner()
         # Test
         converter.current_module = module
-        result = converter.convert_line(part_line)
+        result = converter.convert_line(bfc, part_line)
         # Assert
         print(module.dependancies)
         self.assertIn('n__simple_test', module.dependancies)
@@ -67,25 +69,27 @@ class TestLDrawConverter(TestCase):
 
     def test_it_should_ignore_type_2_line(self):
         # setup
+        bfc = {'ccw': False, 'invertnext': False}
         part_line = "2 24 40 96 -20 -40 96 -20"
         converter, module = self.default_runner()
         # test
         converter.current_module = module
-        output_scad = converter.convert_line(part_line)
+        output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [])
         # With indent
-        output_scad = converter.convert_line(part_line, indent=2)
+        output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [])
 
     def test_it_should_render_type_3_tri(self):
         # setup
+        bfc = {'ccw': False, 'invertnext': False}
         part_line = "3 16 -2.017 -35.943 0 0 -35.942 -3.6 2.017 -35.943 0"
         converter, module = self.default_runner()
         # test
         converter.current_module = module
-        output_scad = converter.convert_line(part_line)
+        output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [
             "color(lego_colours[16])",
@@ -96,7 +100,7 @@ class TestLDrawConverter(TestCase):
             "  ], faces = [[0, 1, 2]]);"
         ])
         # test with indent
-        output_scad = converter.convert_line(part_line, indent=2)
+        output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [
             "  color(lego_colours[16])",
@@ -109,11 +113,12 @@ class TestLDrawConverter(TestCase):
 
     def test_it_should_render_a_quad(self):
         # setup
+        bfc = {'ccw': False, 'invertnext': False}
         part_line = "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0"
         converter, module = self.default_runner()
         # Test
         converter.current_module = module
-        output_scad = converter.convert_line(part_line)
+        output_scad = converter.convert_line(bfc, part_line)
         # Assert
         self.assertEqual(output_scad, [
             "color(lego_colours[16])",
@@ -144,11 +149,12 @@ class TestLDrawConverter(TestCase):
 
     def test_it_should_ignore_the_optional_line(self):
         # setup
+        bfc = {'ccw': False, 'invertnext': False}
         part_line = "5 24 0.7071 0 -0.7071 0.7071 1 -0.7071 0.9239 0 -0.3827 0.3827 0 -0.9239"
         # test
         converter, module = self.default_runner()
         converter.current_module = module
-        output_scad = converter.convert_line(part_line)
+        output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [])
 
@@ -176,21 +182,21 @@ class TestLDrawConverter(TestCase):
             "    [0.9239, 1, 0.3827],",
             "    [0.9239, 0, 0.3827],",
             "    [1, 0, 0]",
-            "  ], faces = [[0, 1, 2, 3]]);",
+            "  ], faces = [[3, 2, 1, 0]]);",
             "color(lego_colours[16])",
             "  polyhedron(points=[",
             "    [0.9239, 1, 0.3827],",
             "    [0.7071, 1, 0.7071],",
             "    [0.7071, 0, 0.7071],",
             "    [0.9239, 0, 0.3827]",
-            "  ], faces = [[0, 1, 2, 3]]);",
+            "  ], faces = [[3, 2, 1, 0]]);",
             "color(lego_colours[16])",
             "  polyhedron(points=[",
             "    [0.7071, 1, 0.7071],",
             "    [0.3827, 1, 0.9239],",
             "    [0.3827, 0, 0.9239],",
             "    [0.7071, 0, 0.7071]",
-            "  ], faces = [[0, 1, 2, 3]]);",
+            "  ], faces = [[3, 2, 1, 0]]);",
         ])
 
     def test_reading_file(self):
@@ -205,6 +211,7 @@ class TestLDrawConverter(TestCase):
         self.assertEqual(output, [
             "// Simple Test File",
             "// Name: simple_test.dat",
+            "",
             "",
             "color(lego_colours[16])",
             "  polyhedron(points=[",
@@ -229,6 +236,7 @@ class TestLDrawConverter(TestCase):
                 "module n__simple_test() {",
                 "  // Simple Test File",
                 "  // Name: simple_test.dat",
+                "  ",
                 "  ",
                 "  color(lego_colours[16])",
                 "    polyhedron(points=[",
@@ -265,6 +273,7 @@ class TestLDrawConverter(TestCase):
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
+            "  ",
             "  color(lego_colours[16])",
             "    polyhedron(points=[",
             "      [1, 1, 1],",
@@ -296,9 +305,11 @@ class TestLDrawConverter(TestCase):
         # setup
         lines = [
             # 1 - ref the mpd
+            "0 BFC CW",
             "1 16 225 224 223 222 221 220 219 218 217 216 215 214 mdr_inner.ldr",
             "0 NOFILE",
             "0 FILE mdr_inner.ldr",
+            "0 BFC CW",
             "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0",
             "0 NOFILE"
         ]
@@ -308,6 +319,7 @@ class TestLDrawConverter(TestCase):
         # assert
         self.assertEqual(result, [
             "module n__mdr_inner() {",
+            "  ",
             "  color(lego_colours[16])",
             "    polyhedron(points=[",
             "      [1, 1, 0],",
@@ -317,6 +329,7 @@ class TestLDrawConverter(TestCase):
             "    ], faces = [[0, 1, 2, 3]]);",
             "  ",
             "}",
+            "",
             "color(lego_colours[16])",
             "  multmatrix([",
             "    [222, 221, 220, 225],",
@@ -343,6 +356,7 @@ class TestLDrawConverter(TestCase):
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
+            "  ",
             "  color(lego_colours[16])",
             "    polyhedron(points=[",
             "      [1, 1, 1],",
@@ -353,6 +367,7 @@ class TestLDrawConverter(TestCase):
             "  ",
             "}",
             "module n__mdr_inner() {",
+            "  ",
             "  color(lego_colours[16])",
             "    multmatrix([",
             "      [22, 21, 20, 25],",
@@ -365,6 +380,7 @@ class TestLDrawConverter(TestCase):
             "}",
             "// Simple MPD File",
             "// Name: mdp_test.dat",
+            "",
             "",
             "color(lego_colours[16])",
             "  multmatrix([",
