@@ -66,8 +66,8 @@ class LDrawConverter:
             converted = self.convert_line(bfc, line)
             self.current_module.add_lines(converted)
 
-    def get_module_lines(self, current_module):
-        real_filename = self.find_part(current_module.filename)
+    def get_module_lines(self, module_name):
+        real_filename = self.find_part(module_name)
         with open(real_filename) as fd:
             lines = fd.readlines()
         return lines
@@ -217,6 +217,12 @@ class LDrawConverter:
         return result
 
     def index_library(self):
+        """Create an index of all LDRAW library items.
+        The index is a dictionary:
+        {"part_prefix\\part_name": "real_file_name.dat"},
+        eg:
+        {"1.dat": }
+        """
         self.index = {}
         paths = ['.']
         for item in os.listdir('.'):
