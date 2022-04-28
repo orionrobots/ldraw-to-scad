@@ -55,6 +55,7 @@ class LDrawConverter:
 
     def process_lines(self, module, lines):
         self.current_module = module
+        bfc = {'ccw': True, 'invertnext': False}
         result = []
         first_line = True
         for line in lines:
@@ -62,7 +63,7 @@ class LDrawConverter:
                 if module.filename == "__main__":
                     continue
             first_line = False
-            converted = self.convert_line(line)
+            converted = self.convert_line(bfc, line)
             self.current_module.add_lines(converted)
 
     def process_main(self, input_lines):
@@ -104,7 +105,7 @@ class LDrawConverter:
     def make_colour(self, colour_index):
         return "color(lego_colours[{0}])".format(colour_index)
 
-    def handle_type_0_line(self, rest):
+    def handle_type_0_line(self, bfc, rest):
         # Ignore NOFILE for now
         if rest.startswith("NOFILE"):
             return False, ""
@@ -115,9 +116,20 @@ class LDrawConverter:
             module_name = Module.make_module_name(filename)
             self.modules[module_name] = self.current_module
             return True, ''
+        if rest.startswith("BFC"):
+            params = rest.split()
+            for param in params[1:]:
+                if param == 'CCW':
+                    bfc['ccw'] = True
+                elif param == 'CW':
+                    bfc['ccw'] = False
+                elif param == 'INVERTNEXT':
+                    bfc['invertnext'] = True
+            return False, ""
+
         return False, "// {}".format(rest)
 
-    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+    def handle_type_1_line(self, bfc, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
         # Is this a new module?
         if module_name not in self.modules:
@@ -125,7 +137,16 @@ class LDrawConverter:
             self.modules[module_name] = Module(filename)
         # Add to deps
         self.current_module.dependancies.add(module_name)
-        
+
+        if bfc['invertnext']:
+            """ We would need to invert face direction but can't do
+                with the current implementation.  We would be able
+                once we decide to change the subpart declarations to
+                purely functional instead of directly materializing
+                them.  For sure this would break color support for
+                subparts though. """
+            print("Can't invert BFC direction.")
+
         return [
             self.make_colour(colour_index),
             "  multmatrix([",
@@ -137,7 +158,7 @@ class LDrawConverter:
             "  {}();".format(module_name)
         ]
 
-    def convert_line(self, part_line, indent=0):
+    def convert_line(self, bfc, part_line, indent=0):
         # Preserve blank lines
         part_line = part_line.strip()
         if part_line == '':
@@ -149,23 +170,32 @@ class LDrawConverter:
             rest = ''
         result = []
         if command == "0":
-            is_new_module, data = self.handle_type_0_line(rest)
+            bfc['invertnext'] = False
+            is_new_module, data = self.handle_type_0_line(bfc, rest)
             if not is_new_module:
                 result.append(data)
+            else:
+                bfc['ccw'] = True
         elif command == "1":
             try:
-                result.extend(self.handle_type_1_line(*rest.split()))
+                result.extend(self.handle_type_1_line(bfc, *rest.split()))
             except TypeError:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
+            bfc['invertnext'] = False
         elif command == "3":
+            bfc['invertnext'] = False
             colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3 = rest.split()
             result.append(self.make_colour(colour_index))
             result.append("  polyhedron(points=[")
             result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
             result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
             result.append("    [{0}, {1}, {2}]".format(x3, y3, z3))
-            result.append("  ], faces = [[0, 1, 2]]);")
+            if bfc['ccw']:
+                result.append("  ], faces = [[2, 1, 0]]);")
+            else:
+                result.append("  ], faces = [[0, 1, 2]]);")
         elif command == "4":
+            bfc['invertnext'] = False
             colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 = rest.split()
             result.append(self.make_colour(colour_index))
             result.append("  polyhedron(points=[")
@@ -173,7 +203,10 @@ class LDrawConverter:
             result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
             result.append("    [{0}, {1}, {2}],".format(x3, y3, z3))
             result.append("    [{0}, {1}, {2}]".format(x4, y4, z4))
-            result.append("  ], faces = [[0, 1, 2, 3]]);")
+            if bfc['ccw']:
+                result.append("  ], faces = [[3, 2, 1, 0]]);")
+            else:
+                result.append("  ], faces = [[0, 1, 2, 3]]);")
         if indent:
             indent_str = ''.join(' ' * indent)
             result = ['{i}{l}'.format(i=indent_str, l=line) for line in result]
