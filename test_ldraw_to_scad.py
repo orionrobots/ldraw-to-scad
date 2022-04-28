@@ -22,7 +22,48 @@ class TestModule(TestCase):
         for item, expected in module_names_to_convert:
             self.assertEqual(Module.make_module_name(item), expected)
 
+class TestFindPart(TestCase):
+    def default_runner(self, module_filename="__main__"):
+        module = Module(module_filename)
+        return LDrawConverter(), module
 
+
+    def test_it_should_be_able_to_find_part_path(self):
+        # WARNING: This test requires having lib/ldraw setup.
+        # setup
+        #  part tests - name, expected location
+        part_tests = [
+            ['1.dat', os.path.join('lib', 'ldraw', 'parts', '1.dat')],
+            ['4-4cyli.dat', os.path.join('lib', 'ldraw', 'p', '4-4cyli.dat')],
+            ['s\\4744s01.dat', os.path.join('lib', 'ldraw', 'parts', 's', '4744s01.dat')]
+        ]
+        def listdir_mock(path):
+            return {
+                '.': ["simple_test.dat"],
+                'lib/ldraw/parts': ['1.dat'],
+                'lib/ldraw/p': ['4-4cyli.dat'],
+                'lib/ldraw/p/48': [],
+                'lib/ldraw/p/8': [],
+                'lib/ldraw/parts/s': ['4744s01.dat']
+            }[path]
+
+        with mock.patch("os.listdir", listdir_mock):
+            # Test
+            converter, module = self.default_runner()
+            converter.index_library()
+
+        # Assert
+        for part_name, expected_path in part_tests:
+            self.assertEqual(converter.find_part(part_name), expected_path)
+
+
+def find_part_mock(_, part_name):
+    """Dummy find part - just returns itself"""
+    return part_name
+
+
+@mock.patch("ldraw_to_scad.LDrawConverter.find_part", find_part_mock)
+# @mock.patch("ldraw_to_scad.LDrawConverter.get_module_lines", mock.Mock(return_value=[]))
 class TestLDrawConverter(TestCase):
     def default_runner(self, module_filename="__main__"):
         module = Module(module_filename)
@@ -129,23 +170,6 @@ class TestLDrawConverter(TestCase):
             "    [1, 0, 0]",
             "  ], faces = [[0, 1, 2, 3]]);"
         ])
-
-    def test_it_should_be_able_to_find_part_path(self):
-        # WARNING: This test requires having lib/ldraw setup.
-        # setup
-        #  part tests - name, expected location
-        part_tests = [
-            ['1.dat', os.path.join('lib', 'ldraw', 'parts', '1.dat')],
-            ['4-4cyli.dat', os.path.join('lib', 'ldraw', 'p', '4-4cyli.dat')],
-            ['s\\4744s01.dat', os.path.join('lib', 'ldraw', 'parts', 's', '4744s01.dat')]
-        ]
-        # Test
-        converter, module = self.default_runner()
-        converter.index_library()
-
-        # Assert
-        for part_name, expected_path in part_tests:
-            self.assertEqual(converter.find_part(part_name), expected_path)
 
     def test_it_should_ignore_the_optional_line(self):
         # setup
