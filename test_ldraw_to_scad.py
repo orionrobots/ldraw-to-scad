@@ -98,14 +98,7 @@ class TestLDrawConverter(TestCase):
         print(module.dependancies)
         self.assertIn('n__simple_test', module.dependancies)
         self.assertEqual(result, [
-            "color(lego_colours[16])",
-            "  multmatrix([",
-            "    [22, 21, 20, 25],",
-            "    [19, 18, 17, 24],",
-            "    [16, 15, 14, 23],",
-            "    [0, 0, 0, 1]",
-            "  ])",
-            "  n__simple_test();"
+            "line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),"
         ])
 
     def test_it_should_ignore_type_2_line(self):
@@ -133,23 +126,13 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [
-            "color(lego_colours[16])",
-            "  polyhedron(points=[",
-            "    [-2.017, -35.943, 0],",
-            "    [0, -35.942, -3.6],",
-            "    [2.017, -35.943, 0]",
-            "  ], faces = [[0, 1, 2]]);"
+            "line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false]),"
         ])
         # test with indent
         output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [
-            "  color(lego_colours[16])",
-            "    polyhedron(points=[",
-            "      [-2.017, -35.943, 0],",
-            "      [0, -35.942, -3.6],",
-            "      [2.017, -35.943, 0]",
-            "    ], faces = [[0, 1, 2]]);"
+            "  line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false]),"
         ])
 
     def test_it_should_render_a_quad(self):
@@ -162,13 +145,7 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # Assert
         self.assertEqual(output_scad, [
-            "color(lego_colours[16])",
-            "  polyhedron(points=[",
-            "    [1, 1, 0],",
-            "    [0.9239, 1, 0.3827],",
-            "    [0.9239, 0, 0.3827],",
-            "    [1, 0, 0]",
-            "  ], faces = [[0, 1, 2, 3]]);"
+            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false]),"
         ])
 
     def test_it_should_ignore_the_optional_line(self):
@@ -200,27 +177,9 @@ class TestLDrawConverter(TestCase):
         self.assertEqual(module.lines, [
             "// Cylinder 1.0",
             "// Name: 4-4cyli.dat",
-            "color(lego_colours[16])",
-            "  polyhedron(points=[",
-            "    [1, 1, 0],",
-            "    [0.9239, 1, 0.3827],",
-            "    [0.9239, 0, 0.3827],",
-            "    [1, 0, 0]",
-            "  ], faces = [[3, 2, 1, 0]]);",
-            "color(lego_colours[16])",
-            "  polyhedron(points=[",
-            "    [0.9239, 1, 0.3827],",
-            "    [0.7071, 1, 0.7071],",
-            "    [0.7071, 0, 0.7071],",
-            "    [0.9239, 0, 0.3827]",
-            "  ], faces = [[3, 2, 1, 0]]);",
-            "color(lego_colours[16])",
-            "  polyhedron(points=[",
-            "    [0.7071, 1, 0.7071],",
-            "    [0.3827, 1, 0.9239],",
-            "    [0.3827, 0, 0.9239],",
-            "    [0.7071, 0, 0.7071]",
-            "  ], faces = [[3, 2, 1, 0]]);",
+            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, true]),",
+            "line([4, 16, 0.9239, 1, 0.3827, 0.7071, 1, 0.7071, 0.7071, 0, 0.7071, 0.9239, 0, 0.3827, true]),",
+            "line([4, 16, 0.7071, 1, 0.7071, 0.3827, 1, 0.9239, 0.3827, 0, 0.9239, 0.7071, 0, 0.7071, true]),",
         ])
 
     def test_reading_file(self):
@@ -232,19 +191,15 @@ class TestLDrawConverter(TestCase):
             lines = fd.readlines()
         output = converter.process_main(lines)
         # assert
-        self.assertEqual(output, [
-            "// Simple Test File",
-            "// Name: simple_test.dat",
-            "",
-            "",
-            "color(lego_colours[16])",
-            "  polyhedron(points=[",
-            "    [1, 1, 1],",
-            "    [1, 1, -1],",
-            "    [-1, 1, -1],",
-            "    [-1, 1, 1]",
-            "  ], faces = [[0, 1, 2, 3]]);",
-            ""
+        self.assertEqual(output[1:], [
+            "function n____main__() = concat(",
+            "  // Simple Test File",
+            "  // Name: simple_test.dat",
+            "  ",
+            "  ",
+            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
+            "  ",
+            "[]);"
         ])
     
     def test_it_process_type_1_line_into_module(self):
@@ -255,30 +210,19 @@ class TestLDrawConverter(TestCase):
         result = converter.process_main(part_lines)
         # assert
         self.assertListEqual(
-            result,
+            result[1:],
             [
-                "module n__simple_test() {",
+                "function n__simple_test() = concat(",
                 "  // Simple Test File",
                 "  // Name: simple_test.dat",
                 "  ",
                 "  ",
-                "  color(lego_colours[16])",
-                "    polyhedron(points=[",
-                "      [1, 1, 1],",
-                "      [1, 1, -1],",
-                "      [-1, 1, -1],",
-                "      [-1, 1, 1]",
-                "    ], faces = [[0, 1, 2, 3]]);",
+                "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
                 "  ",
-                "}",
-                "color(lego_colours[16])",
-                "  multmatrix([",
-                "    [22, 21, 20, 25],",
-                "    [19, 18, 17, 24],",
-                "    [16, 15, 14, 23],",
-                "    [0, 0, 0, 1]",
-                "  ])",
-                "  n__simple_test();"
+                "[]);",
+                "function n____main__() = concat(",
+                "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),",
+                "[]);"
             ]
         )
 
@@ -292,37 +236,19 @@ class TestLDrawConverter(TestCase):
         converter, _ = self.default_runner()
         result = converter.process_main(lines)
         # Assert
-        self.assertEqual(result, [
-            "module n__simple_test() {",
+        self.assertEqual(result[1:], [
+            "function n__simple_test() = concat(",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  color(lego_colours[16])",
-            "    polyhedron(points=[",
-            "      [1, 1, 1],",
-            "      [1, 1, -1],",
-            "      [-1, 1, -1],",
-            "      [-1, 1, 1]",
-            "    ], faces = [[0, 1, 2, 3]]);",
+            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
             "  ",
-            "}",
-            "color(lego_colours[16])",
-            "  multmatrix([",
-            "    [22, 21, 20, 25],",
-            "    [19, 18, 17, 24],",
-            "    [16, 15, 14, 23],",
-            "    [0, 0, 0, 1]",
-            "  ])",
-            "  n__simple_test();",
-            "color(lego_colours[16])",
-            "  multmatrix([",
-            "    [2.2, 2.1, 2.0, 2.5],",
-            "    [1.9, 1.8, 1.7, 2.4],",
-            "    [1.6, 1.5, 1.4, 2.3],",
-            "    [0, 0, 0, 1]",
-            "  ])",
-            "  n__simple_test();",
+            "[]);",
+            "function n____main__() = concat(",
+            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),",
+            "  line([1, 16, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, n__simple_test(), false]),",
+            "[]);"
         ])
 
     def test_try_simplest_mpd(self):
@@ -341,28 +267,17 @@ class TestLDrawConverter(TestCase):
         converter, _ = self.default_runner()
         result = converter.process_main(lines)
         # assert
-        self.assertEqual(result, [
-            "module n__mdr_inner() {",
+        self.assertEqual(result[1:], [
+            "function n__mdr_inner() = concat(",
             "  ",
-            "  color(lego_colours[16])",
-            "    polyhedron(points=[",
-            "      [1, 1, 0],",
-            "      [0.9239, 1, 0.3827],",
-            "      [0.9239, 0, 0.3827],",
-            "      [1, 0, 0]",
-            "    ], faces = [[0, 1, 2, 3]]);",
+            "  line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false]),",
             "  ",
-            "}",
-            "",
-            "color(lego_colours[16])",
-            "  multmatrix([",
-            "    [222, 221, 220, 225],",
-            "    [219, 218, 217, 224],",
-            "    [216, 215, 214, 223],",
-            "    [0, 0, 0, 1]",
-            "  ])",
-            "  n__mdr_inner();",
-            "",
+            "[]);",
+            "function n____main__() = concat(",
+            "  ",
+            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false]),",
+            "  ",
+            "[]);",
         ])
 
     def test_loading_an_mpd(self):
@@ -374,46 +289,28 @@ class TestLDrawConverter(TestCase):
             output = converter.process_main(fd)
         # Assert
         self.maxDiff = None
-        self.assertListEqual(output,
+        self.assertListEqual(output[1:],
         [
-            "module n__simple_test() {",
+            "function n__simple_test() = concat(",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  color(lego_colours[16])",
-            "    polyhedron(points=[",
-            "      [1, 1, 1],",
-            "      [1, 1, -1],",
-            "      [-1, 1, -1],",
-            "      [-1, 1, 1]",
-            "    ], faces = [[0, 1, 2, 3]]);",
+            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
             "  ",
-            "}",
-            "module n__mdr_inner() {",
+            "[]);",
+            "function n__mdr_inner() = concat(",
             "  ",
-            "  color(lego_colours[16])",
-            "    multmatrix([",
-            "      [22, 21, 20, 25],",
-            "      [19, 18, 17, 24],",
-            "      [16, 15, 14, 23],",
-            "      [0, 0, 0, 1]",
-            "    ])",
-            "    n__simple_test();",
+            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),",
             "  ",
-            "}",
-            "// Simple MPD File",
-            "// Name: mdp_test.dat",
-            "",
-            "",
-            "color(lego_colours[16])",
-            "  multmatrix([",
-            "    [222, 221, 220, 225],",
-            "    [219, 218, 217, 224],",
-            "    [216, 215, 214, 223],",
-            "    [0, 0, 0, 1]",
-            "  ])",
-            "  n__mdr_inner();",
-            "",
-            ""
+            "[]);",
+            "function n____main__() = concat(",
+            "  // Simple MPD File",
+            "  // Name: mdp_test.dat",
+            "  ",
+            "  ",
+            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false]),",
+            "  ",
+            "  ",
+            "[]);",
         ])
