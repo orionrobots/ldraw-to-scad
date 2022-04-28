@@ -66,6 +66,12 @@ class LDrawConverter:
             converted = self.convert_line(bfc, line)
             self.current_module.add_lines(converted)
 
+    def get_module_lines(self, current_module):
+        real_filename = self.find_part(current_module.filename)
+        with open(real_filename) as fd:
+            lines = fd.readlines()
+        return lines
+
     def process_main(self, input_lines):
         main_module = Module('__main__')
         self.modules[main_module.get_module_name()] = main_module
@@ -81,9 +87,7 @@ class LDrawConverter:
             # Have we loaded it?
             if not current_module.lines:
                 print("Main module lines is", len(main_module.lines))
-                real_filename = self.find_part(current_module.filename)
-                with open(real_filename) as fd:
-                    lines = fd.readlines()
+                lines = self.get_module_lines(current_module.filename)
                 self.process_lines(current_module, lines)
             # Check - have we covered it dependancies
             new_dependancy = False
