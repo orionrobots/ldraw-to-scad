@@ -27,19 +27,16 @@ class Module():
         self.lines.extend(lines)
 
     def get_lines(self):
-        if self.filename == '__main__':
-            return self.lines
-        else:
-            return self.get_module_code()
+        return self.get_module_code()
 
     def get_module_code(self):
         func_lines = ['  {}'.format(line) 
             for line in self.lines]
 
         return [
-            "module {}() {{".format(self.get_module_name())
+            "function {}() = concat(".format(self.get_module_name())
         ] + func_lines + [
-            "}"
+            "[]);"
         ]
 
 
@@ -101,13 +98,77 @@ class LDrawConverter:
                 completed.append(current_module.get_module_name())
         # Now we can create output lines - starting at the top
         # of completed modules.
-        output_lines = []
+        output_lines = ["""
+/* general data structure:
+      array of
+          vectors of
+              array of points (face)
+              color index
+*/
+
+/* makepoly: convert data structure to colored 3d object
+
+   For each face color a polyhedron with a single face
+   constructed by the array of points in clockwise
+   direction.
+*/
+module makepoly(poly)
+    for(f=poly)
+        color(lego_colours[f[1]])
+            polyhedron(f[0], [[for(i=[0:1:len(f[0])-1]) i]]);
+
+/* det3: calculate the determinant of a 3x3 matrix */
+function det3(M) = + M[0][0] * M[1][1] * M[2][2]
+                   + M[0][1] * M[1][2] * M[2][0]
+                   + M[0][2] * M[1][0] * M[2][1]
+                   - M[0][2] * M[1][1] * M[2][0]
+                   - M[0][1] * M[1][0] * M[2][2]
+                   - M[0][0] * M[1][2] * M[2][1];
+
+/* l1: transform the subpart according to a line 1 specification
+   For each face:
+       Transform the array of points by matrix multiplication.
+       Reverse the face direction if:
+           - determinant of the non-absolute
+             3x3 matrix part is negative
+           - requested by BFC INVERTNEXT
+       Replace the face color with the specified one if the
+           original color was 16.
+*/
+function l1(M, poly, col, invert) =
+    [for(f=poly) [
+        rev([for(p=f[0]) M * [p.x, p.y, p.z, 1]],
+            det3(M)<0 != invert),
+        (f[1] == 16) ? col : f[1]
+    ]];
+
+/* rev: reverse an array if condition c is true */
+function rev(v, c=true) = c ? [for(i=[1:len(v)]) v[len(v) - i]] : v;
+
+/* line: construct data structure according to specification */
+function line(v) =
+    (v[0] == 1) ?
+        l1([[v[ 5], v[ 6], v[ 7], v[2]],
+            [v[ 8], v[ 9], v[10], v[3]],
+            [v[11], v[12], v[13], v[4]]],
+           v[14], v[1], (len(v)>15) ? v[15] : false) : (
+    (v[0] == 3) ?
+        [[rev([[v[ 2], v[ 3], v[ 4]],
+               [v[ 5], v[ 6], v[ 7]],
+               [v[ 8], v[ 9], v[10]]],
+              (len(v)>11) ? v[11] : true), v[1]]] : (
+    (v[0] == 4) ?
+        [[rev([[v[ 2], v[ 3], v[ 4]],
+               [v[ 5], v[ 6], v[ 7]],
+               [v[ 8], v[ 9], v[10]],
+               [v[11], v[12], v[13]]],
+              (len(v)>14) ? v[14] : true), v[1]]] : []));
+
+makepoly(n____main__());
+        """]
         [output_lines.extend(self.modules[module_name].get_lines())
             for module_name in completed]
         return output_lines
-
-    def make_colour(self, colour_index):
-        return "color(lego_colours[{0}])".format(colour_index)
 
     def handle_type_0_line(self, bfc, rest):
         # Ignore NOFILE for now
@@ -142,24 +203,11 @@ class LDrawConverter:
         # Add to deps
         self.current_module.dependancies.add(module_name)
 
-        if bfc['invertnext']:
-            """ We would need to invert face direction but can't do
-                with the current implementation.  We would be able
-                once we decide to change the subpart declarations to
-                purely functional instead of directly materializing
-                them.  For sure this would break color support for
-                subparts though. """
-            print("Can't invert BFC direction.")
-
         return [
-            self.make_colour(colour_index),
-            "  multmatrix([",
-            "    [{0}, {1}, {2}, {3}],".format(a, b, c, x),
-            "    [{0}, {1}, {2}, {3}],".format(d, e, f, y),
-            "    [{0}, {1}, {2}, {3}],".format(g, h, i, z),
-            "    [{0}, {1}, {2}, {3}]".format(0, 0, 0, 1),
-            "  ])",
-            "  {}();".format(module_name)
+                "line([1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
+                " {}, {}(), {}]),".format(
+                    colour_index, x, y, z, a, b, c, d, e, f, g, h, i,
+                    module_name, 'true' if bfc['invertnext'] else 'false')
         ]
 
     def convert_line(self, bfc, part_line, indent=0):
@@ -188,29 +236,14 @@ class LDrawConverter:
             bfc['invertnext'] = False
         elif command == "3":
             bfc['invertnext'] = False
-            colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3 = rest.split()
-            result.append(self.make_colour(colour_index))
-            result.append("  polyhedron(points=[")
-            result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
-            result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
-            result.append("    [{0}, {1}, {2}]".format(x3, y3, z3))
-            if bfc['ccw']:
-                result.append("  ], faces = [[2, 1, 0]]);")
-            else:
-                result.append("  ], faces = [[0, 1, 2]]);")
+            result.append("line([{}, {}, {}]),".format(
+                command, ', '.join(rest.split()[:10]),
+                'true' if bfc['ccw'] else 'false'))
         elif command == "4":
             bfc['invertnext'] = False
-            colour_index, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4 = rest.split()
-            result.append(self.make_colour(colour_index))
-            result.append("  polyhedron(points=[")
-            result.append("    [{0}, {1}, {2}],".format(x1, y1, z1))
-            result.append("    [{0}, {1}, {2}],".format(x2, y2, z2))
-            result.append("    [{0}, {1}, {2}],".format(x3, y3, z3))
-            result.append("    [{0}, {1}, {2}]".format(x4, y4, z4))
-            if bfc['ccw']:
-                result.append("  ], faces = [[3, 2, 1, 0]]);")
-            else:
-                result.append("  ], faces = [[0, 1, 2, 3]]);")
+            result.append("line([{}, {}, {}]),".format(
+                command, ', '.join(rest.split()[:13]),
+                'true' if bfc['ccw'] else 'false'))
         if indent:
             indent_str = ''.join(' ' * indent)
             result = ['{i}{l}'.format(i=indent_str, l=line) for line in result]
