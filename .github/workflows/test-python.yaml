@@ -1,7 +1,6 @@
 ---
 name: Test python
 on: 
-  push:
   pull_request:
 jobs:
   test-python:
