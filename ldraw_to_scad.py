@@ -34,10 +34,51 @@ class Module():
             for line in self.lines]
 
         return [
-            "function {}() = concat(".format(self.get_module_name())
+            "function {}() = [".format(self.get_module_name())
         ] + func_lines + [
-            "[]);"
+            "];"
         ]
+
+
+def colorfile(library_root):
+    """ Translate color specifications. """
+    coltxt = ('function ldraw_color(id, alt=false) = alt ?'
+              ' ldraw_color_LDCfgalt(id) :'
+              ' ldraw_color_LDConfig(id);\n')
+    for colfile in ['LDConfig', 'LDCfgalt']:
+        with open(os.path.join(library_root, colfile+'.ldr'),
+                  encoding="utf-8", errors='replace') as filedata:
+            lines = filedata.readlines()
+        colors = [f'function ldraw_color_{colfile}(id) = (']
+        for line in lines:
+            params = line.split()
+            if len(params) >= 2 and params[0] == '0' and \
+               params[1] == '!COLOUR':
+                data = {}
+                if len(params) == 2:
+                    print('!COLOUR line with no data!')
+                data['name'] = params[2]
+                skip = False
+                for pos, opt in enumerate(params[3:]):
+                    if skip:
+                        skip = False
+                        continue
+                    if opt in ['CODE', 'VALUE', 'ALPHA', 'LUMINANCE', 'EDGE',
+                               'SIZE', 'MINSIZE', 'MAXSIZE', 'FRACTION',
+                               'VFRACTION', 'MATERIAL']:
+                        data[opt] = params[pos+4]
+                        skip = True
+                    elif opt in ['METAL', 'RUBBER', 'PEARLESCENT', 'CHROME']:
+                        data[opt] = True
+                    else:
+                        print(f'Unknown !COLOUR option {opt}!')
+                colors.append(
+                    f'(id=={data["CODE"]}) ? ["{data["VALUE"]}'
+                    f'{(int(data["ALPHA"]) if "ALPHA" in data else 255):02X}'
+                    f'","{data["EDGE"]}"] : (')
+        colors.append('"UNKNOWN"'+')'*len(colors)+';')
+        coltxt += '\n'.join(colors) + '\n'
+    return coltxt
 
 
 class LDrawConverter:
@@ -52,7 +93,6 @@ class LDrawConverter:
 
     def process_lines(self, module, lines):
         self.current_module = module
-        bfc = {'ccw': True, 'invertnext': False}
         result = []
         first_line = True
         for line in lines:
@@ -60,7 +100,7 @@ class LDrawConverter:
                 if module.filename == "__main__":
                     continue
             first_line = False
-            converted = self.convert_line(bfc, line)
+            converted = self.convert_line(line)
             self.current_module.add_lines(converted)
 
     def get_module_lines(self, module_name):
@@ -69,7 +109,7 @@ class LDrawConverter:
             lines = fd.readlines()
         return lines
 
-    def process_main(self, input_lines):
+    def process_main(self, input_lines, line_width=0.2):
         main_module = Module('__main__')
         self.modules[main_module.get_module_name()] = main_module
         self.modules_queue.put(main_module)
@@ -98,79 +138,15 @@ class LDrawConverter:
                 completed.append(current_module.get_module_name())
         # Now we can create output lines - starting at the top
         # of completed modules.
-        output_lines = ["""
-/* general data structure:
-      array of
-          vectors of
-              array of points (face)
-              color index
-*/
-
-/* makepoly: convert data structure to colored 3d object
-
-   For each face color a polyhedron with a single face
-   constructed by the array of points in clockwise
-   direction.
-*/
-module makepoly(poly)
-    for(f=poly)
-        color(lego_colours[f[1]])
-            polyhedron(f[0], [[for(i=[0:1:len(f[0])-1]) i]]);
-
-/* det3: calculate the determinant of a 3x3 matrix */
-function det3(M) = + M[0][0] * M[1][1] * M[2][2]
-                   + M[0][1] * M[1][2] * M[2][0]
-                   + M[0][2] * M[1][0] * M[2][1]
-                   - M[0][2] * M[1][1] * M[2][0]
-                   - M[0][1] * M[1][0] * M[2][2]
-                   - M[0][0] * M[1][2] * M[2][1];
-
-/* l1: transform the subpart according to a line 1 specification
-   For each face:
-       Transform the array of points by matrix multiplication.
-       Reverse the face direction if:
-           - determinant of the non-absolute
-             3x3 matrix part is negative
-           - requested by BFC INVERTNEXT
-       Replace the face color with the specified one if the
-           original color was 16.
-*/
-function l1(M, poly, col, invert) =
-    [for(f=poly) [
-        rev([for(p=f[0]) M * [p.x, p.y, p.z, 1]],
-            det3(M)<0 != invert),
-        (f[1] == 16) ? col : f[1]
-    ]];
-
-/* rev: reverse an array if condition c is true */
-function rev(v, c=true) = c ? [for(i=[1:len(v)]) v[len(v) - i]] : v;
-
-/* line: construct data structure according to specification */
-function line(v) =
-    (v[0] == 1) ?
-        l1([[v[ 5], v[ 6], v[ 7], v[2]],
-            [v[ 8], v[ 9], v[10], v[3]],
-            [v[11], v[12], v[13], v[4]]],
-           v[14], v[1], (len(v)>15) ? v[15] : false) : (
-    (v[0] == 3) ?
-        [[rev([[v[ 2], v[ 3], v[ 4]],
-               [v[ 5], v[ 6], v[ 7]],
-               [v[ 8], v[ 9], v[10]]],
-              (len(v)>11) ? v[11] : true), v[1]]] : (
-    (v[0] == 4) ?
-        [[rev([[v[ 2], v[ 3], v[ 4]],
-               [v[ 5], v[ 6], v[ 7]],
-               [v[ 8], v[ 9], v[10]],
-               [v[11], v[12], v[13]]],
-              (len(v)>14) ? v[14] : true), v[1]]] : []));
-
-makepoly(n____main__());
-        """]
+        with open('lib.scad') as fd:
+            output_lines = [ colorfile(os.path.join('lib', 'ldraw')) +
+                             ''.join(fd.readlines()) +
+                             '\nmakepoly(n____main__(), line={});'.format(line_width) ]
         [output_lines.extend(self.modules[module_name].get_lines())
             for module_name in completed]
         return output_lines
 
-    def handle_type_0_line(self, bfc, rest):
+    def handle_type_0_line(self, rest):
         # Ignore NOFILE for now
         if rest.startswith("NOFILE"):
             return False, ""
@@ -183,18 +159,13 @@ makepoly(n____main__());
             return True, ''
         if rest.startswith("BFC"):
             params = rest.split()
-            for param in params[1:]:
-                if param == 'CCW':
-                    bfc['ccw'] = True
-                elif param == 'CW':
-                    bfc['ccw'] = False
-                elif param == 'INVERTNEXT':
-                    bfc['invertnext'] = True
-            return False, ""
+            return False, ' '.join(['[0,"BFC","{}"],'.format(param) for param in params[1:]])
+        if rest.startswith('STEP'):
+            return False, '[0,"STEP"],'
 
         return False, "// {}".format(rest)
 
-    def handle_type_1_line(self, bfc, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
         # Is this a new module?
         if module_name not in self.modules:
@@ -204,13 +175,13 @@ makepoly(n____main__());
         self.current_module.dependancies.add(module_name)
 
         return [
-                "line([1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
-                " {}, {}(), {}]),".format(
+                "[1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
+                " {}, {}()],".format(
                     colour_index, x, y, z, a, b, c, d, e, f, g, h, i,
-                    module_name, 'true' if bfc['invertnext'] else 'false')
+                    module_name)
         ]
 
-    def convert_line(self, bfc, part_line, indent=0):
+    def convert_line(self, part_line, indent=0):
         # Preserve blank lines
         part_line = part_line.strip()
         if part_line == '':
@@ -222,28 +193,17 @@ makepoly(n____main__());
             rest = ''
         result = []
         if command == "0":
-            bfc['invertnext'] = False
-            is_new_module, data = self.handle_type_0_line(bfc, rest)
+            is_new_module, data = self.handle_type_0_line(rest)
             if not is_new_module:
                 result.append(data)
-            else:
-                bfc['ccw'] = True
         elif command == "1":
             try:
-                result.extend(self.handle_type_1_line(bfc, *rest.split()))
+                result.extend(self.handle_type_1_line(*rest.split()))
             except TypeError:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
-            bfc['invertnext'] = False
-        elif command == "3":
-            bfc['invertnext'] = False
-            result.append("line([{}, {}, {}]),".format(
-                command, ', '.join(rest.split()[:10]),
-                'true' if bfc['ccw'] else 'false'))
-        elif command == "4":
-            bfc['invertnext'] = False
-            result.append("line([{}, {}, {}]),".format(
-                command, ', '.join(rest.split()[:13]),
-                'true' if bfc['ccw'] else 'false'))
+        elif command in ["2", "3", "4", "5"]:
+            result.append(("[{}, {}],").format(
+                command, ', '.join(rest.split()[:{"2" : 7, "3": 10, "4": 13, "5": 13}[command]])))
         if indent:
             indent_str = ''.join(' ' * indent)
             result = ['{i}{l}'.format(i=indent_str, l=line) for line in result]
@@ -292,10 +252,13 @@ def main():
     parser = argparse.ArgumentParser(description='Convert an LDraw part to OpenSCAD')
     parser.add_argument('ldraw_file', metavar='FILENAME')
     parser.add_argument('output_file', metavar='OUTPUT_FILENAME')
+    parser.add_argument(
+        '--line', default=0.2, type=float, metavar='LINE_WIDTH',
+        help='width of lines, 0 for no lines')
     args = parser.parse_args()
     convert = LDrawConverter()
     with open(args.ldraw_file) as fd:
-        result = convert.process_main(fd)
+        result = convert.process_main(fd, args.line)
     with open(args.output_file, 'w') as fdw:
         fdw.write('\n'.join(result))
 
