@@ -88,43 +88,66 @@ function l1(M, poly, col, invert=false, step=0) =
 function rev(v, c=true) = c ? [for(i=[1:len(v)]) v[len(v) - i]] : v;
 
 function lines(v) =
-    [for (i=0, l = []; i <= len(v);
-          l=concat(l,line(v[i])),i=i+1) l]
+    [for (i=0,
+          l = [],
+          mr=[0, true, false];
+          i <= len(v);
+          m=metaline(v[i], mr),
+          l=concat(l,line(v[i], m)),
+          mr=[m[0],
+             m[1],
+             (v[i][0] == 0) ? m[2] : false],
+          i=i+1) l]
     [len(v)];
 
+function metaline(v, meta) =
+    (v[0] == 0) ? (
+        (v[1] == "STEP") ?
+            [meta[0]+1, meta[1], false] : (
+        (v[1] == "BFC") ? (
+            (v[2] == "CCW") ?
+                [meta[0], true, false] : (
+            (v[2] == "CW") ?
+                [meta[0], false, false] : (
+            (v[2] == "INVERTNEXT") ?
+                [meta[0], meta[1], true] :
+                [meta[0], meta[1], false]))) :
+            [meta[0], meta[1], false])) :
+        [meta[0], meta[1], meta[2]];
+
 /* line: construct data structure according to specification */
-function line(v) =
+function line(v, meta) =
     (v[0] == 1) ?
         l1([[v[ 5], v[ 6], v[ 7], v[2]],
             [v[ 8], v[ 9], v[10], v[3]],
             [v[11], v[12], v[13], v[4]]],
            v[14],
            v[1],
-           (len(v)>15) ? v[15] : false,
-           (len(v)>16) ? v[16] : 0) : (
+           meta[2],
+           meta[0]) : (
     (v[0] == 2) ?
         [[false,
           [[v[ 2], v[ 3], v[ 4]],
            [v[ 5], v[ 6], v[ 7]]],
           v[1],
-          (len(v)>8) ? v[8] : 0]] : (
+          meta[0]]] : (
     (v[0] == 3) ?
         [[true,
           rev([[v[ 2], v[ 3], v[ 4]],
                [v[ 5], v[ 6], v[ 7]],
                [v[ 8], v[ 9], v[10]]],
-              (len(v)>11) ? v[11] : true),
+              meta[1]),
           v[1],
-          (len(v)>12) ? v[12] : 0]] : (
+          meta[0]]] : (
     (v[0] == 4) ?
         [[true,
           rev([[v[ 2], v[ 3], v[ 4]],
                [v[ 5], v[ 6], v[ 7]],
                [v[ 8], v[ 9], v[10]],
                [v[11], v[12], v[13]]],
-              (len(v)>14) ? v[14] : true),
+              meta[1]),
           v[1],
-          (len(v)>15) ? v[15] : 0]] : (
+          meta[0]]] : (
     (v[0] == 5) ?
         [[false,
           [[v[ 2], v[ 3], v[ 4]],
@@ -132,4 +155,4 @@ function line(v) =
            [v[ 8], v[ 9], v[10]],
            [v[11], v[12], v[13]]],
           v[1],
-          (len(v)>14) ? v[14] : 0]] : []))));
+          meta[0]]] : []))));

@@ -93,7 +93,6 @@ class LDrawConverter:
 
     def process_lines(self, module, lines):
         self.current_module = module
-        var = {'ccw': True, 'invertnext': False, 'step': 0}
         result = []
         first_line = True
         for line in lines:
@@ -101,7 +100,7 @@ class LDrawConverter:
                 if module.filename == "__main__":
                     continue
             first_line = False
-            converted = self.convert_line(var, line)
+            converted = self.convert_line(line)
             self.current_module.add_lines(converted)
 
     def get_module_lines(self, module_name):
@@ -147,7 +146,7 @@ class LDrawConverter:
             for module_name in completed]
         return output_lines
 
-    def handle_type_0_line(self, var, rest):
+    def handle_type_0_line(self, rest):
         # Ignore NOFILE for now
         if rest.startswith("NOFILE"):
             return False, ""
@@ -160,21 +159,13 @@ class LDrawConverter:
             return True, ''
         if rest.startswith("BFC"):
             params = rest.split()
-            for param in params[1:]:
-                if param == 'CCW':
-                    var['ccw'] = True
-                elif param == 'CW':
-                    var['ccw'] = False
-                elif param == 'INVERTNEXT':
-                    var['invertnext'] = True
-            return False, ""
+            return False, ' '.join(['[0,"BFC","{}"],'.format(param) for param in params[1:]])
         if rest.startswith('STEP'):
-            var['step'] += 1
-            return False, ""
+            return False, '[0,"STEP"],'
 
         return False, "// {}".format(rest)
 
-    def handle_type_1_line(self, var, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+    def handle_type_1_line(self, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
         # Is this a new module?
         if module_name not in self.modules:
@@ -185,13 +176,12 @@ class LDrawConverter:
 
         return [
                 "[1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
-                " {}, {}(), {}, {}],".format(
+                " {}, {}()],".format(
                     colour_index, x, y, z, a, b, c, d, e, f, g, h, i,
-                    module_name, 'true' if var['invertnext'] else 'false',
-                    var['step'])
+                    module_name)
         ]
 
-    def convert_line(self, var, part_line, indent=0):
+    def convert_line(self, part_line, indent=0):
         # Preserve blank lines
         part_line = part_line.strip()
         if part_line == '':
@@ -203,40 +193,17 @@ class LDrawConverter:
             rest = ''
         result = []
         if command == "0":
-            var['invertnext'] = False
-            is_new_module, data = self.handle_type_0_line(var, rest)
+            is_new_module, data = self.handle_type_0_line(rest)
             if not is_new_module:
                 result.append(data)
-            else:
-                var['ccw'] = True
         elif command == "1":
             try:
-                result.extend(self.handle_type_1_line(var, *rest.split()))
+                result.extend(self.handle_type_1_line(*rest.split()))
             except TypeError:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
-            var['invertnext'] = False
-        elif command == "2":
-            var['invertnext'] = False
-            result.append(("[{} ,{}, {}],").format(
-                command, ', '.join(rest.split()[:7]),
-                var['step']))
-        elif command == "3":
-            var['invertnext'] = False
-            result.append("[{}, {}, {}, {}],".format(
-                command, ', '.join(rest.split()[:10]),
-                'true' if var['ccw'] else 'false',
-                var['step']))
-        elif command == "4":
-            var['invertnext'] = False
-            result.append("[{}, {}, {}, {}],".format(
-                command, ', '.join(rest.split()[:13]),
-                'true' if var['ccw'] else 'false',
-                var['step']))
-        elif command == "5":
-            var['invertnext'] = False
-            result.append(("[{}, {}, {}],").format(
-                command, ', '.join(rest.split()[:13]),
-                var['step']))
+        elif command in ["2", "3", "4", "5"]:
+            result.append(("[{}, {}],").format(
+                command, ', '.join(rest.split()[:{"2" : 7, "3": 10, "4": 13, "5": 13}[command]])))
         if indent:
             indent_str = ''.join(' ' * indent)
             result = ['{i}{l}'.format(i=indent_str, l=line) for line in result]
