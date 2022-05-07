@@ -106,7 +106,7 @@ class TestLDrawConverter(TestCase):
             "line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),"
         ])
 
-    def test_it_should_ignore_type_2_line(self):
+    def test_it_should_render_type_2_line(self):
         # setup
         bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "2 24 40 96 -20 -40 96 -20"
@@ -115,11 +115,11 @@ class TestLDrawConverter(TestCase):
         converter.current_module = module
         output_scad = converter.convert_line(bfc, part_line)
         # assert
-        self.assertEqual(output_scad, [])
+        self.assertEqual(output_scad, ['line([2, 24, 40, 96, -20, -40, 96, -20, 0]),'])
         # With indent
         output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
-        self.assertEqual(output_scad, [])
+        self.assertEqual(output_scad, ['  line([2, 24, 40, 96, -20, -40, 96, -20, 0]),'])
 
     def test_it_should_render_type_3_tri(self):
         # setup
@@ -153,7 +153,7 @@ class TestLDrawConverter(TestCase):
             "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0]),"
         ])
 
-    def test_it_should_ignore_the_optional_line(self):
+    def test_it_should_render_the_optional_line(self):
         # setup
         bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "5 24 0.7071 0 -0.7071 0.7071 1 -0.7071 0.9239 0 -0.3827 0.3827 0 -0.9239"
@@ -162,7 +162,9 @@ class TestLDrawConverter(TestCase):
         converter.current_module = module
         output_scad = converter.convert_line(bfc, part_line)
         # assert
-        self.assertEqual(output_scad, [])
+        self.assertEqual(output_scad, [
+            'line([5, 24, 0.7071, 0, -0.7071, 0.7071, 1, -0.7071, 0.9239, 0, -0.3827, 0.3827, 0, -0.9239, 0]),'
+        ])
 
     def test_multiple_lines(self):
         # setup
@@ -183,7 +185,9 @@ class TestLDrawConverter(TestCase):
             "// Cylinder 1.0",
             "// Name: 4-4cyli.dat",
             "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, true, 0]),",
+            "line([5, 24, 1, 0, 0, 1, 1, 0, 0.9239, 0, 0.3827, 0.9239, 0, -0.3827, 0]),",
             "line([4, 16, 0.9239, 1, 0.3827, 0.7071, 1, 0.7071, 0.7071, 0, 0.7071, 0.9239, 0, 0.3827, true, 0]),",
+            "line([5, 24, 0.9239, 0, 0.3827, 0.9239, 1, 0.3827, 0.7071, 0, 0.7071, 1, 0, 0, 0]),",
             "line([4, 16, 0.7071, 1, 0.7071, 0.3827, 1, 0.9239, 0.3827, 0, 0.9239, 0.7071, 0, 0.7071, true, 0]),",
         ])
 

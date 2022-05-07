@@ -41,14 +41,19 @@ class Module():
 
 
 def colorfile(library_root):
-    coltxt = 'function ldraw_color(id, alt=false) = alt ? ldraw_color_LDCfgalt(id) : ldraw_color_LDConfig(id);\n'
+    """ Translate color specifications. """
+    coltxt = ('function ldraw_color(id, alt=false) = alt ?'
+              ' ldraw_color_LDCfgalt(id) :'
+              ' ldraw_color_LDConfig(id);\n')
     for colfile in ['LDConfig', 'LDCfgalt']:
-        with open(os.path.join(library_root, colfile+'.ldr'), errors='replace') as fd:
-            lines = fd.readlines()
-        colors = ['function ldraw_color_{}(id) = ('.format(colfile)]
-        for l in lines:
-            params = l.split()
-            if len(params) >= 2 and params[0] == '0' and params[1] == '!COLOUR':
+        with open(os.path.join(library_root, colfile+'.ldr'),
+                  encoding="utf-8", errors='replace') as filedata:
+            lines = filedata.readlines()
+        colors = [f'function ldraw_color_{colfile}(id) = (']
+        for line in lines:
+            params = line.split()
+            if len(params) >= 2 and params[0] == '0' and \
+               params[1] == '!COLOUR':
                 data = {}
                 if len(params) == 2:
                     print('!COLOUR line with no data!')
@@ -58,50 +63,19 @@ def colorfile(library_root):
                     if skip:
                         skip = False
                         continue
-                    if opt == 'CODE':
-                        data['code'] = params[pos+4]
+                    if opt in ['CODE', 'VALUE', 'ALPHA', 'LUMINANCE', 'EDGE',
+                               'SIZE', 'MINSIZE', 'MAXSIZE', 'FRACTION',
+                               'VFRACTION', 'MATERIAL']:
+                        data[opt] = params[pos+4]
                         skip = True
-                    elif opt == 'VALUE':
-                        data['value'] = params[pos+4]
-                        skip = True
-                    elif opt == 'ALPHA':
-                        data['alpha'] = params[pos+4]
-                        skip = True
-                    elif opt == 'LUMINANCE':
-                        data['luminance'] = params[pos+4]
-                        skip = True
-                    elif opt == 'EDGE':
-                        data['edge'] = params[pos+4]
-                        skip = True
-                    elif opt == 'SIZE':
-                        data['size'] = params[pos+4]
-                        skip = True
-                    elif opt == 'MINSIZE':
-                        data['minsize'] = params[pos+4]
-                        skip = True
-                    elif opt == 'MAXSIZE':
-                        data['maxsize'] = params[pos+4]
-                        skip = True
-                    elif opt == 'FRACTION':
-                        data['fraction'] = params[pos+4]
-                        skip = True
-                    elif opt == 'VFRACTION':
-                        data['vfraction'] = params[pos+4]
-                        skip = True
-                    elif opt == 'MATERIAL':
-                        data['material'] = params[pos+4]
-                        skip = True
-                    elif opt == 'METAL':
-                        data['metal'] = True
-                    elif opt == 'RUBBER':
-                        data['rubber'] = True
-                    elif opt == 'PEARLESCENT':
-                        data['pearlescent'] = True
-                    elif opt == 'CHROME':
-                        data['chrome'] = True
+                    elif opt in ['METAL', 'RUBBER', 'PEARLESCENT', 'CHROME']:
+                        data[opt] = True
                     else:
-                        print('Unknown !COLOUR option {}!'.format(opt))
-                colors.append('(id=={}) ? "{}{:02X}" : ('.format(data['code'], data['value'], int(data['alpha']) if 'alpha' in data else 255))
+                        print(f'Unknown !COLOUR option {opt}!')
+                colors.append(
+                    f'(id=={data["CODE"]}) ? ["{data["VALUE"]}'
+                    f'{(int(data["ALPHA"]) if "ALPHA" in data else 255):02X}'
+                    f'","{data["EDGE"]}"] : (')
         colors.append('"UNKNOWN"'+')'*len(colors)+';')
         coltxt += '\n'.join(colors) + '\n'
     return coltxt
@@ -241,6 +215,11 @@ class LDrawConverter:
             except TypeError:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
             var['invertnext'] = False
+        elif command == "2":
+            var['invertnext'] = False
+            result.append(("line([{}, {}, {}]),").format(
+                command, ', '.join(rest.split()[:7]),
+                var['step']))
         elif command == "3":
             var['invertnext'] = False
             result.append("line([{}, {}, {}, {}]),".format(
@@ -252,6 +231,11 @@ class LDrawConverter:
             result.append("line([{}, {}, {}, {}]),".format(
                 command, ', '.join(rest.split()[:13]),
                 'true' if var['ccw'] else 'false',
+                var['step']))
+        elif command == "5":
+            var['invertnext'] = False
+            result.append(("line([{}, {}, {}]),").format(
+                command, ', '.join(rest.split()[:13]),
                 var['step']))
         if indent:
             indent_str = ''.join(' ' * indent)
