@@ -40,6 +40,73 @@ class Module():
         ]
 
 
+def colorfile(library_root):
+    coltxt = 'function ldraw_color(id, alt=false) = alt ? ldraw_color_LDCfgalt(id) : ldraw_color_LDConfig(id);\n'
+    for colfile in ['LDConfig', 'LDCfgalt']:
+        with open(os.path.join(library_root, colfile+'.ldr'), errors='replace') as fd:
+            lines = fd.readlines()
+        colors = ['function ldraw_color_{}(id) = ('.format(colfile)]
+        for l in lines:
+            params = l.split()
+            if len(params) >= 2 and params[0] == '0' and params[1] == '!COLOUR':
+                data = {}
+                if len(params) == 2:
+                    print('!COLOUR line with no data!')
+                data['name'] = params[2]
+                skip = False
+                for pos, opt in enumerate(params[3:]):
+                    if skip:
+                        skip = False
+                        continue
+                    if opt == 'CODE':
+                        data['code'] = params[pos+4]
+                        skip = True
+                    elif opt == 'VALUE':
+                        data['value'] = params[pos+4]
+                        skip = True
+                    elif opt == 'ALPHA':
+                        data['alpha'] = params[pos+4]
+                        skip = True
+                    elif opt == 'LUMINANCE':
+                        data['luminance'] = params[pos+4]
+                        skip = True
+                    elif opt == 'EDGE':
+                        data['edge'] = params[pos+4]
+                        skip = True
+                    elif opt == 'SIZE':
+                        data['size'] = params[pos+4]
+                        skip = True
+                    elif opt == 'MINSIZE':
+                        data['minsize'] = params[pos+4]
+                        skip = True
+                    elif opt == 'MAXSIZE':
+                        data['maxsize'] = params[pos+4]
+                        skip = True
+                    elif opt == 'FRACTION':
+                        data['fraction'] = params[pos+4]
+                        skip = True
+                    elif opt == 'VFRACTION':
+                        data['vfraction'] = params[pos+4]
+                        skip = True
+                    elif opt == 'MATERIAL':
+                        data['material'] = params[pos+4]
+                        skip = True
+                    elif opt == 'METAL':
+                        data['metal'] = True
+                    elif opt == 'RUBBER':
+                        data['rubber'] = True
+                    elif opt == 'PEARLESCENT':
+                        data['pearlescent'] = True
+                    elif opt == 'CHROME':
+                        data['chrome'] = True
+                    else:
+                        print('Unknown !COLOUR option {}!'.format(opt))
+                colors.append('(id=={}) ? "{}{:02X}" : ('.format(data['code'], data['value'], int(data['alpha']) if 'alpha' in data else 255))
+        colors.append('"UNKNOWN"'+')'*len(colors)+';')
+        coltxt += '\n'.join(colors) + '\n'
+    return coltxt
+
+
 class LDrawConverter:
     def __init__(self):
         # Ref name: module class
@@ -52,7 +119,7 @@ class LDrawConverter:
 
     def process_lines(self, module, lines):
         self.current_module = module
-        bfc = {'ccw': True, 'invertnext': False}
+        var = {'ccw': True, 'invertnext': False, 'step': 0}
         result = []
         first_line = True
         for line in lines:
@@ -60,7 +127,7 @@ class LDrawConverter:
                 if module.filename == "__main__":
                     continue
             first_line = False
-            converted = self.convert_line(bfc, line)
+            converted = self.convert_line(var, line)
             self.current_module.add_lines(converted)
 
     def get_module_lines(self, module_name):
@@ -99,13 +166,14 @@ class LDrawConverter:
         # Now we can create output lines - starting at the top
         # of completed modules.
         with open('lib.scad') as fd:
-            output_lines = [ ''.join(fd.readlines()) +
+            output_lines = [ colorfile(os.path.join('lib', 'ldraw')) +
+                             ''.join(fd.readlines()) +
                              '\nmakepoly(n____main__());' ]
         [output_lines.extend(self.modules[module_name].get_lines())
             for module_name in completed]
         return output_lines
 
-    def handle_type_0_line(self, bfc, rest):
+    def handle_type_0_line(self, var, rest):
         # Ignore NOFILE for now
         if rest.startswith("NOFILE"):
             return False, ""
@@ -120,16 +188,19 @@ class LDrawConverter:
             params = rest.split()
             for param in params[1:]:
                 if param == 'CCW':
-                    bfc['ccw'] = True
+                    var['ccw'] = True
                 elif param == 'CW':
-                    bfc['ccw'] = False
+                    var['ccw'] = False
                 elif param == 'INVERTNEXT':
-                    bfc['invertnext'] = True
+                    var['invertnext'] = True
+            return False, ""
+        if rest.startswith('STEP'):
+            var['step'] += 1
             return False, ""
 
         return False, "// {}".format(rest)
 
-    def handle_type_1_line(self, bfc, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
+    def handle_type_1_line(self, var, colour_index, x, y, z, a, b, c, d, e, f, g, h, i, filename):
         module_name = Module.make_module_name(filename)
         # Is this a new module?
         if module_name not in self.modules:
@@ -140,12 +211,13 @@ class LDrawConverter:
 
         return [
                 "line([1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
-                " {}, {}(), {}]),".format(
+                " {}, {}(), {}, {}]),".format(
                     colour_index, x, y, z, a, b, c, d, e, f, g, h, i,
-                    module_name, 'true' if bfc['invertnext'] else 'false')
+                    module_name, 'true' if var['invertnext'] else 'false',
+                    var['step'])
         ]
 
-    def convert_line(self, bfc, part_line, indent=0):
+    def convert_line(self, var, part_line, indent=0):
         # Preserve blank lines
         part_line = part_line.strip()
         if part_line == '':
@@ -157,28 +229,30 @@ class LDrawConverter:
             rest = ''
         result = []
         if command == "0":
-            bfc['invertnext'] = False
-            is_new_module, data = self.handle_type_0_line(bfc, rest)
+            var['invertnext'] = False
+            is_new_module, data = self.handle_type_0_line(var, rest)
             if not is_new_module:
                 result.append(data)
             else:
-                bfc['ccw'] = True
+                var['ccw'] = True
         elif command == "1":
             try:
-                result.extend(self.handle_type_1_line(bfc, *rest.split()))
+                result.extend(self.handle_type_1_line(var, *rest.split()))
             except TypeError:
                 raise TypeError("Insufficient arguments in type 1 line", rest)
-            bfc['invertnext'] = False
+            var['invertnext'] = False
         elif command == "3":
-            bfc['invertnext'] = False
-            result.append("line([{}, {}, {}]),".format(
+            var['invertnext'] = False
+            result.append("line([{}, {}, {}, {}]),".format(
                 command, ', '.join(rest.split()[:10]),
-                'true' if bfc['ccw'] else 'false'))
+                'true' if var['ccw'] else 'false',
+                var['step']))
         elif command == "4":
-            bfc['invertnext'] = False
-            result.append("line([{}, {}, {}]),".format(
+            var['invertnext'] = False
+            result.append("line([{}, {}, {}, {}]),".format(
                 command, ', '.join(rest.split()[:13]),
-                'true' if bfc['ccw'] else 'false'))
+                'true' if var['ccw'] else 'false',
+                var['step']))
         if indent:
             indent_str = ''.join(' ' * indent)
             result = ['{i}{l}'.format(i=indent_str, l=line) for line in result]

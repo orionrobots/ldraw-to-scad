@@ -62,7 +62,12 @@ def find_part_mock(_, part_name):
     return part_name
 
 
+def colorfile_mock(library_root):
+    """Dummy colorfile - just return empty file"""
+    return ""
+
 @mock.patch("ldraw_to_scad.LDrawConverter.find_part", find_part_mock)
+@mock.patch("ldraw_to_scad.colorfile", colorfile_mock)
 # @mock.patch("ldraw_to_scad.LDrawConverter.get_module_lines", mock.Mock(return_value=[]))
 class TestLDrawConverter(TestCase):
     def default_runner(self, module_filename="__main__"):
@@ -71,7 +76,7 @@ class TestLDrawConverter(TestCase):
 
     def test_it_should_convert_comments(self):
         # setup
-        bfc = {'ccw': False, 'invertnext': False}
+        bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_lines_to_test =[
             ["0 Stud", "// Stud"],
             ["0", "// "]
@@ -88,7 +93,7 @@ class TestLDrawConverter(TestCase):
         # setup
         # This is a silly matrix - but the components are easy to pick out
         #      1 <colour> x  y  z  a  b  c  d  e  f  g  h  i <file>
-        bfc = {'ccw': False, 'invertnext': False}
+        bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat"
         converter, module = self.default_runner()
         # Test
@@ -98,12 +103,12 @@ class TestLDrawConverter(TestCase):
         print(module.dependancies)
         self.assertIn('n__simple_test', module.dependancies)
         self.assertEqual(result, [
-            "line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),"
+            "line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),"
         ])
 
     def test_it_should_ignore_type_2_line(self):
         # setup
-        bfc = {'ccw': False, 'invertnext': False}
+        bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "2 24 40 96 -20 -40 96 -20"
         converter, module = self.default_runner()
         # test
@@ -118,7 +123,7 @@ class TestLDrawConverter(TestCase):
 
     def test_it_should_render_type_3_tri(self):
         # setup
-        bfc = {'ccw': False, 'invertnext': False}
+        bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "3 16 -2.017 -35.943 0 0 -35.942 -3.6 2.017 -35.943 0"
         converter, module = self.default_runner()
         # test
@@ -126,18 +131,18 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [
-            "line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false]),"
+            "line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false, 0]),"
         ])
         # test with indent
         output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [
-            "  line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false]),"
+            "  line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false, 0]),"
         ])
 
     def test_it_should_render_a_quad(self):
         # setup
-        bfc = {'ccw': False, 'invertnext': False}
+        bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0"
         converter, module = self.default_runner()
         # Test
@@ -145,12 +150,12 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # Assert
         self.assertEqual(output_scad, [
-            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false]),"
+            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0]),"
         ])
 
     def test_it_should_ignore_the_optional_line(self):
         # setup
-        bfc = {'ccw': False, 'invertnext': False}
+        bfc = {'ccw': False, 'invertnext': False, 'step': 0}
         part_line = "5 24 0.7071 0 -0.7071 0.7071 1 -0.7071 0.9239 0 -0.3827 0.3827 0 -0.9239"
         # test
         converter, module = self.default_runner()
@@ -177,9 +182,9 @@ class TestLDrawConverter(TestCase):
         self.assertEqual(module.lines, [
             "// Cylinder 1.0",
             "// Name: 4-4cyli.dat",
-            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, true]),",
-            "line([4, 16, 0.9239, 1, 0.3827, 0.7071, 1, 0.7071, 0.7071, 0, 0.7071, 0.9239, 0, 0.3827, true]),",
-            "line([4, 16, 0.7071, 1, 0.7071, 0.3827, 1, 0.9239, 0.3827, 0, 0.9239, 0.7071, 0, 0.7071, true]),",
+            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, true, 0]),",
+            "line([4, 16, 0.9239, 1, 0.3827, 0.7071, 1, 0.7071, 0.7071, 0, 0.7071, 0.9239, 0, 0.3827, true, 0]),",
+            "line([4, 16, 0.7071, 1, 0.7071, 0.3827, 1, 0.9239, 0.3827, 0, 0.9239, 0.7071, 0, 0.7071, true, 0]),",
         ])
 
     def test_reading_file(self):
@@ -197,7 +202,7 @@ class TestLDrawConverter(TestCase):
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
+            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
             "  ",
             "[]);"
         ])
@@ -217,11 +222,11 @@ class TestLDrawConverter(TestCase):
                 "  // Name: simple_test.dat",
                 "  ",
                 "  ",
-                "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
+                "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
                 "  ",
                 "[]);",
                 "function n____main__() = concat(",
-                "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),",
+                "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),",
                 "[]);"
             ]
         )
@@ -242,12 +247,12 @@ class TestLDrawConverter(TestCase):
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
+            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
             "  ",
             "[]);",
             "function n____main__() = concat(",
-            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),",
-            "  line([1, 16, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, n__simple_test(), false]),",
+            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),",
+            "  line([1, 16, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, n__simple_test(), false, 0]),",
             "[]);"
         ])
 
@@ -270,12 +275,12 @@ class TestLDrawConverter(TestCase):
         self.assertEqual(result[1:], [
             "function n__mdr_inner() = concat(",
             "  ",
-            "  line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false]),",
+            "  line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0]),",
             "  ",
             "[]);",
             "function n____main__() = concat(",
             "  ",
-            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false]),",
+            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false, 0]),",
             "  ",
             "[]);",
         ])
@@ -296,12 +301,12 @@ class TestLDrawConverter(TestCase):
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false]),",
+            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
             "  ",
             "[]);",
             "function n__mdr_inner() = concat(",
             "  ",
-            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false]),",
+            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),",
             "  ",
             "[]);",
             "function n____main__() = concat(",
@@ -309,7 +314,7 @@ class TestLDrawConverter(TestCase):
             "  // Name: mdp_test.dat",
             "  ",
             "  ",
-            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false]),",
+            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false, 0]),",
             "  ",
             "  ",
             "[]);",
