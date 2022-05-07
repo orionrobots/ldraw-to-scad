@@ -109,7 +109,7 @@ class LDrawConverter:
             lines = fd.readlines()
         return lines
 
-    def process_main(self, input_lines):
+    def process_main(self, input_lines, line_width=0.2):
         main_module = Module('__main__')
         self.modules[main_module.get_module_name()] = main_module
         self.modules_queue.put(main_module)
@@ -141,7 +141,7 @@ class LDrawConverter:
         with open('lib.scad') as fd:
             output_lines = [ colorfile(os.path.join('lib', 'ldraw')) +
                              ''.join(fd.readlines()) +
-                             '\nmakepoly(n____main__());' ]
+                             '\nmakepoly(n____main__(), line={});'.format(line_width) ]
         [output_lines.extend(self.modules[module_name].get_lines())
             for module_name in completed]
         return output_lines
@@ -252,10 +252,13 @@ def main():
     parser = argparse.ArgumentParser(description='Convert an LDraw part to OpenSCAD')
     parser.add_argument('ldraw_file', metavar='FILENAME')
     parser.add_argument('output_file', metavar='OUTPUT_FILENAME')
+    parser.add_argument(
+        '--line', default=0.2, type=float, metavar='LINE_WIDTH',
+        help='width of lines, 0 for no lines')
     args = parser.parse_args()
     convert = LDrawConverter()
     with open(args.ldraw_file) as fd:
-        result = convert.process_main(fd)
+        result = convert.process_main(fd, args.line)
     with open(args.output_file, 'w') as fdw:
         fdw.write('\n'.join(result))
 
