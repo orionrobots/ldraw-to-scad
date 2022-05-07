@@ -74,7 +74,7 @@ function det3(M) = + M[0][0] * M[1][1] * M[2][2]
            original color was 16.
 */
 function l1(M, poly, col, invert=false, step=0) =
-    [for(f=poly)
+    [for(f=lines(poly))
         [f[0],
          rev([for(p=f[1]) M * [p.x, p.y, p.z, 1]],
              f[0] && (det3(M)<0 != invert)),
@@ -86,6 +86,11 @@ function l1(M, poly, col, invert=false, step=0) =
 
 /* rev: reverse an array if condition c is true */
 function rev(v, c=true) = c ? [for(i=[1:len(v)]) v[len(v) - i]] : v;
+
+function lines(v) =
+    [for (i=0, l = []; i <= len(v);
+          l=concat(l,line(v[i])),i=i+1) l]
+    [len(v)];
 
 /* line: construct data structure according to specification */
 function line(v) =

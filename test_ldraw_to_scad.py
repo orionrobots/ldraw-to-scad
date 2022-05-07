@@ -103,7 +103,7 @@ class TestLDrawConverter(TestCase):
         print(module.dependancies)
         self.assertIn('n__simple_test', module.dependancies)
         self.assertEqual(result, [
-            "line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),"
+            "[1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0],"
         ])
 
     def test_it_should_render_type_2_line(self):
@@ -115,11 +115,11 @@ class TestLDrawConverter(TestCase):
         converter.current_module = module
         output_scad = converter.convert_line(bfc, part_line)
         # assert
-        self.assertEqual(output_scad, ['line([2, 24, 40, 96, -20, -40, 96, -20, 0]),'])
+        self.assertEqual(output_scad, ['[2 ,24, 40, 96, -20, -40, 96, -20, 0],'])
         # With indent
         output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
-        self.assertEqual(output_scad, ['  line([2, 24, 40, 96, -20, -40, 96, -20, 0]),'])
+        self.assertEqual(output_scad, ['  [2 ,24, 40, 96, -20, -40, 96, -20, 0],'])
 
     def test_it_should_render_type_3_tri(self):
         # setup
@@ -131,13 +131,13 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [
-            "line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false, 0]),"
+            "[3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false, 0],"
         ])
         # test with indent
         output_scad = converter.convert_line(bfc, part_line, indent=2)
         # assert
         self.assertEqual(output_scad, [
-            "  line([3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false, 0]),"
+            "  [3, 16, -2.017, -35.943, 0, 0, -35.942, -3.6, 2.017, -35.943, 0, false, 0],"
         ])
 
     def test_it_should_render_a_quad(self):
@@ -150,7 +150,7 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # Assert
         self.assertEqual(output_scad, [
-            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0]),"
+            "[4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0],"
         ])
 
     def test_it_should_render_the_optional_line(self):
@@ -163,7 +163,7 @@ class TestLDrawConverter(TestCase):
         output_scad = converter.convert_line(bfc, part_line)
         # assert
         self.assertEqual(output_scad, [
-            'line([5, 24, 0.7071, 0, -0.7071, 0.7071, 1, -0.7071, 0.9239, 0, -0.3827, 0.3827, 0, -0.9239, 0]),'
+            '[5, 24, 0.7071, 0, -0.7071, 0.7071, 1, -0.7071, 0.9239, 0, -0.3827, 0.3827, 0, -0.9239, 0],'
         ])
 
     def test_multiple_lines(self):
@@ -184,11 +184,11 @@ class TestLDrawConverter(TestCase):
         self.assertEqual(module.lines, [
             "// Cylinder 1.0",
             "// Name: 4-4cyli.dat",
-            "line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, true, 0]),",
-            "line([5, 24, 1, 0, 0, 1, 1, 0, 0.9239, 0, 0.3827, 0.9239, 0, -0.3827, 0]),",
-            "line([4, 16, 0.9239, 1, 0.3827, 0.7071, 1, 0.7071, 0.7071, 0, 0.7071, 0.9239, 0, 0.3827, true, 0]),",
-            "line([5, 24, 0.9239, 0, 0.3827, 0.9239, 1, 0.3827, 0.7071, 0, 0.7071, 1, 0, 0, 0]),",
-            "line([4, 16, 0.7071, 1, 0.7071, 0.3827, 1, 0.9239, 0.3827, 0, 0.9239, 0.7071, 0, 0.7071, true, 0]),",
+            "[4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, true, 0],",
+            "[5, 24, 1, 0, 0, 1, 1, 0, 0.9239, 0, 0.3827, 0.9239, 0, -0.3827, 0],",
+            "[4, 16, 0.9239, 1, 0.3827, 0.7071, 1, 0.7071, 0.7071, 0, 0.7071, 0.9239, 0, 0.3827, true, 0],",
+            "[5, 24, 0.9239, 0, 0.3827, 0.9239, 1, 0.3827, 0.7071, 0, 0.7071, 1, 0, 0, 0],",
+            "[4, 16, 0.7071, 1, 0.7071, 0.3827, 1, 0.9239, 0.3827, 0, 0.9239, 0.7071, 0, 0.7071, true, 0],",
         ])
 
     def test_reading_file(self):
@@ -201,14 +201,14 @@ class TestLDrawConverter(TestCase):
         output = converter.process_main(lines)
         # assert
         self.assertEqual(output[1:], [
-            "function n____main__() = concat(",
+            "function n____main__() = [",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
+            "  [4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0],",
             "  ",
-            "[]);"
+            "];"
         ])
     
     def test_it_process_type_1_line_into_module(self):
@@ -221,17 +221,17 @@ class TestLDrawConverter(TestCase):
         self.assertListEqual(
             result[1:],
             [
-                "function n__simple_test() = concat(",
+                "function n__simple_test() = [",
                 "  // Simple Test File",
                 "  // Name: simple_test.dat",
                 "  ",
                 "  ",
-                "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
+                "  [4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0],",
                 "  ",
-                "[]);",
-                "function n____main__() = concat(",
-                "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),",
-                "[]);"
+                "];",
+                "function n____main__() = [",
+                "  [1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0],",
+                "];"
             ]
         )
 
@@ -246,18 +246,18 @@ class TestLDrawConverter(TestCase):
         result = converter.process_main(lines)
         # Assert
         self.assertEqual(result[1:], [
-            "function n__simple_test() = concat(",
+            "function n__simple_test() = [",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
+            "  [4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0],",
             "  ",
-            "[]);",
-            "function n____main__() = concat(",
-            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),",
-            "  line([1, 16, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, n__simple_test(), false, 0]),",
-            "[]);"
+            "];",
+            "function n____main__() = [",
+            "  [1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0],",
+            "  [1, 16, 2.5, 2.4, 2.3, 2.2, 2.1, 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, n__simple_test(), false, 0],",
+            "];"
         ])
 
     def test_try_simplest_mpd(self):
@@ -277,16 +277,16 @@ class TestLDrawConverter(TestCase):
         result = converter.process_main(lines)
         # assert
         self.assertEqual(result[1:], [
-            "function n__mdr_inner() = concat(",
+            "function n__mdr_inner() = [",
             "  ",
-            "  line([4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0]),",
+            "  [4, 16, 1, 1, 0, 0.9239, 1, 0.3827, 0.9239, 0, 0.3827, 1, 0, 0, false, 0],",
             "  ",
-            "[]);",
-            "function n____main__() = concat(",
+            "];",
+            "function n____main__() = [",
             "  ",
-            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false, 0]),",
+            "  [1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false, 0],",
             "  ",
-            "[]);",
+            "];",
         ])
 
     def test_loading_an_mpd(self):
@@ -300,26 +300,26 @@ class TestLDrawConverter(TestCase):
         self.maxDiff = None
         self.assertListEqual(output[1:],
         [
-            "function n__simple_test() = concat(",
+            "function n__simple_test() = [",
             "  // Simple Test File",
             "  // Name: simple_test.dat",
             "  ",
             "  ",
-            "  line([4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0]),",
+            "  [4, 16, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, false, 0],",
             "  ",
-            "[]);",
-            "function n__mdr_inner() = concat(",
+            "];",
+            "function n__mdr_inner() = [",
             "  ",
-            "  line([1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0]),",
+            "  [1, 16, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, n__simple_test(), false, 0],",
             "  ",
-            "[]);",
-            "function n____main__() = concat(",
+            "];",
+            "function n____main__() = [",
             "  // Simple MPD File",
             "  // Name: mdp_test.dat",
             "  ",
             "  ",
-            "  line([1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false, 0]),",
+            "  [1, 16, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, n__mdr_inner(), false, 0],",
             "  ",
             "  ",
-            "[]);",
+            "];",
         ])

@@ -34,9 +34,9 @@ class Module():
             for line in self.lines]
 
         return [
-            "function {}() = concat(".format(self.get_module_name())
+            "function {}() = [".format(self.get_module_name())
         ] + func_lines + [
-            "[]);"
+            "];"
         ]
 
 
@@ -184,8 +184,8 @@ class LDrawConverter:
         self.current_module.dependancies.add(module_name)
 
         return [
-                "line([1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
-                " {}, {}(), {}, {}]),".format(
+                "[1, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},"
+                " {}, {}(), {}, {}],".format(
                     colour_index, x, y, z, a, b, c, d, e, f, g, h, i,
                     module_name, 'true' if var['invertnext'] else 'false',
                     var['step'])
@@ -217,24 +217,24 @@ class LDrawConverter:
             var['invertnext'] = False
         elif command == "2":
             var['invertnext'] = False
-            result.append(("line([{}, {}, {}]),").format(
+            result.append(("[{} ,{}, {}],").format(
                 command, ', '.join(rest.split()[:7]),
                 var['step']))
         elif command == "3":
             var['invertnext'] = False
-            result.append("line([{}, {}, {}, {}]),".format(
+            result.append("[{}, {}, {}, {}],".format(
                 command, ', '.join(rest.split()[:10]),
                 'true' if var['ccw'] else 'false',
                 var['step']))
         elif command == "4":
             var['invertnext'] = False
-            result.append("line([{}, {}, {}, {}]),".format(
+            result.append("[{}, {}, {}, {}],".format(
                 command, ', '.join(rest.split()[:13]),
                 'true' if var['ccw'] else 'false',
                 var['step']))
         elif command == "5":
             var['invertnext'] = False
-            result.append(("line([{}, {}, {}]),").format(
+            result.append(("[{}, {}, {}],").format(
                 command, ', '.join(rest.split()[:13]),
                 var['step']))
         if indent:
