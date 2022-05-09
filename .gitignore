@@ -1,4 +1,4 @@
-lib/ldraw/
+lib/
 __pycache__/
 .vscode/
 test_anim/
