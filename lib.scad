@@ -18,16 +18,24 @@ module ccolor(col) {
     else children();
 }
 
+/* compile: translate the data structure
+
+   Do a final transformation into the coordinate system typically used
+   in OpenSCAD where the z axis points towards the top and scale the
+   units to be 0.2 units(mm) per LDraw unit.
+*/
+function compile(poly, unit=2/5) =
+    l1([[unit, 0    , 0,    0],
+        [0,    0    , unit, 0],
+        [0,    -unit, 0,    0]],
+       poly, 16, step=-1);
+
 /* calculate the viewing vector from the view port rotation angles */
 vv = [cos($vpr.z)*sin($vpr.y)*cos($vpr.x) + sin($vpr.z)*sin($vpr.x),
       sin($vpr.z)*sin($vpr.y)*cos($vpr.x) - cos($vpr.z)*sin($vpr.x),
       cos($vpr.y)*cos($vpr.x)];
 
-/* makepoly: convert data structure to colored 3d object
-
-   Do a final transformation into the coordinate system typically used
-   in OpenSCAD where the z axis points towards the top and scale the
-   units to be 0.2 units(mm) per LDraw unit.
+/* makepoly: make object from LDraw structure
 
    Besides the non-translated data structure (poly) this takes the
    following parameters:
@@ -40,16 +48,22 @@ vv = [cos($vpr.z)*sin($vpr.y)*cos($vpr.x) + sin($vpr.z)*sin($vpr.x),
         one
    line: define line thickness, set to false if no lines should be
          rendered
+   solid: create a solid polyhedron in favor of nice-looking preview
+          object
 */
 module makepoly(poly, step=0, col=false, unit=2/5,
-                alt=false, line=0.2)
+                alt=false, line=0.2, solid=!$preview)
+    if(solid) solidpoly(poly=poly, step=step, col=col, unit=unit,
+                        alt=alt);
+    else fancypoly(poly=poly, step=step, col=col, unit=unit,
+                   alt=alt, line=line);
 
-    // translate the data structure with final rotation and scaling
+/* fancypoly: convert data structure to colored 3d object */
+module fancypoly(poly, step=0, col=false, unit=2/5,
+                 alt=false, line=0.2)
+
     // and iterate over the results
-    for(f=l1([[unit, 0    , 0,    0],
-              [0,    0    , unit, 0],
-              [0,    -unit, 0,    0]],
-           poly, 16, step=-1))
+    for(f=compile(poly=poly, unit=unit))
         // draw only if all steps should be shown or this part is
         // included in the step to be shown
         if(step == 0 || f[3] < step)
@@ -105,6 +119,48 @@ module makepoly(poly, step=0, col=false, unit=2/5,
                           f[1][1].x-f[1][0].x)])
             cylinder(norm(f[1][1]-f[1][0]), d=line);
         }
+
+function solidpoly(poly, step=0, unit=2/5) =
+    let (l=concat([for(f=compile(poly=poly, unit=unit))
+        // check whether this is a face or line and
+        // draw only if all steps should be shown or this part is
+        // included in the step to be shown
+        (f[0] && (step == 0 || f[3] < step)) ? f[1]:[]],[[]]))
+    [for (
+        i=0, pc=0, p=[], f=[];
+        i<len(l);
+        p=concat(p, l[i]),
+        f=(len(l[i]) != 0) ? concat(f,[[for(r=[0:1:len(l[i])-1]) r+pc]]) : f,
+        pc=pc+len(l[i]),
+        i=i+1
+    ) [p,f]][len(l)-1];
+
+module solidpoly(poly, step=0, col=false, unit=2/5, alt=false)
+    ccolor(is_num(col) ? ldraw_color(col, alt)[0] : col)
+    let(p=solidpoly(poly=poly, step=step, unit=unit))
+    polyhedron(p[0], p[1]);
+
+function bounds(poly, step=0, unit=2/5) =
+    let(points = solidpoly(poly=poly, step=step, unit=unit)[0])
+    points ? [[min([for(p=points) p.x]),
+               min([for(p=points) p.y]),
+               min([for(p=points) p.z])],
+              [max([for(p=points) p.x]),
+               max([for(p=points) p.y]),
+               max([for(p=points) p.z])]] :
+             [[0, 0, 0], [0, 0, 0]];
+
+function center(poly, step=0, unit=2/5) =
+    let(b = bounds(poly=poly, step=step, unit=unit))
+    [(b[0].x + b[1].x)/2,
+     (b[0].y + b[1].y)/2,
+     (b[0].z + b[1].z)/2];
+
+function size(poly, step=0, unit=2/5) =
+    let(b = bounds(poly=poly, step=step, unit=unit))
+    [b[1].x - b[0].x,
+     b[1].y - b[0].y,
+     b[1].z - b[0].z];
 
 /* det3: calculate the determinant of a 3x3 matrix */
 function det3(M) = + M[0][0] * M[1][1] * M[2][2]
