@@ -12,5 +12,5 @@ jobs:
           python-version: '3.x'
       - run: pip install -r test-requirements.txt
       - run: pytest .
-      - run: python -m pylint ldraw_to_scad.py
-      - run: python -m pycodestyle ldraw_to_scad.py
+      - run: python -m pylint *.py
+      - run: python -m pycodestyle *.py
