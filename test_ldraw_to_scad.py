@@ -90,7 +90,8 @@ class TestLDrawConverter(TestCase):
         """ test conversion of type 1 lines """
         # setup
         part_line = "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat"
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         converter.filedep = [set(), set()]
         # Test
         result = converter.convert_line(part_line)
@@ -106,7 +107,8 @@ class TestLDrawConverter(TestCase):
         """ test conversion of type 2 lines """
         # setup
         part_line = "2 24 40 96 -20 -40 96 -20"
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         # test
         output_scad = converter.convert_line(part_line)
         # assert
@@ -118,7 +120,8 @@ class TestLDrawConverter(TestCase):
         """ test conversion of type 3 lines """
         # setup
         part_line = "3 16 -2.017 -35.943 0 0 -35.942 -3.6 2.017 -35.943 0"
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         # test
         output_scad = converter.convert_line(part_line)
         # assert
@@ -130,7 +133,8 @@ class TestLDrawConverter(TestCase):
         """ test conversion of type 4 lines """
         # setup
         part_line = "4 16 1 1 0 0.9239 1 0.3827 0.9239 0 0.3827 1 0 0"
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         # Test
         output_scad = converter.convert_line(part_line)
         # Assert
@@ -144,7 +148,8 @@ class TestLDrawConverter(TestCase):
         part_line = ("5 24 0.7071 0 -0.7071 0.7071 1 -0.7071 "
                      "0.9239 0 -0.3827 0.3827 0 -0.9239")
         # test
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         output_scad = converter.convert_line(part_line)
         # assert
         self.assertEqual(output_scad, [
@@ -171,7 +176,7 @@ class TestLDrawConverter(TestCase):
         result = converter.process_lines('__main__', '/', lines)
         # Assert
         self.assertEqual(result, [
-            "use <openscad/lib.scad>",
+            "use <LDraw/lib.scad>",
             "function ldraw_lib____main__() = [",
             "// 0 Cylinder 1.0",
             "// 0 Name: 4-4cyli.dat",
@@ -204,7 +209,7 @@ class TestLDrawConverter(TestCase):
         output = converter.process_lines('__main__', '/', lines)
         # assert
         self.assertEqual(output, [
-            "use <openscad/lib.scad>",
+            "use <LDraw/lib.scad>",
             "function ldraw_lib____main__() = [",
             "// 0 Simple Test File",
             "// 0 Name: simple_test.dat",
@@ -223,15 +228,16 @@ class TestLDrawConverter(TestCase):
         # setup
         part_lines = [
             "1 16 25 24 23 22 21 20 19 18 17 16 15 14 simple_test.dat"]
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         # test
         result = converter.process_lines('__main__', '/', part_lines)
         # assert
         self.assertListEqual(
             result,
             [
-                "use <openscad/lib.scad>",
-                "use <openscad/./simple_test.scad>",
+                "use <LDraw/lib.scad>",
+                "use <LDraw/./simple_test.scad>",
                 "function ldraw_lib____main__() = [",
                 ("  [1,16,25,24,23,22,21,20,19,18,17,16,15,14, "
                  "ldraw_lib__simple_test()],"),
@@ -249,12 +255,13 @@ class TestLDrawConverter(TestCase):
              "simple_test.dat"),
         ]
         # Test
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         result = converter.process_lines('__main__', '/', lines)
         # Assert
         self.assertEqual(result, [
-            "use <openscad/lib.scad>",
-            "use <openscad/./simple_test.scad>",
+            "use <LDraw/lib.scad>",
+            "use <LDraw/./simple_test.scad>",
             "function ldraw_lib____main__() = [",
             ("  [1,16,25,24,23,22,21,20,19,18,17,16,15,14, "
              "ldraw_lib__simple_test()],"),
@@ -279,11 +286,12 @@ class TestLDrawConverter(TestCase):
             "0 NOFILE"
         ]
         # test
-        converter = LDrawConverter(commented=False)
+        converter = LDrawConverter()
+        converter.set('commented', False)
         result = converter.process_lines('__main__', '/', lines)
         # assert
         self.assertEqual(result, [
-            "use <openscad/lib.scad>",
+            "use <LDraw/lib.scad>",
             "function ldraw_lib____main__() = [",
             '  [0,"BFC","CW"],',
             ("  [1,16,225,224,223,222,221,220,219,218,217,216,215,214, "
@@ -311,8 +319,8 @@ class TestLDrawConverter(TestCase):
         output = converter.process_lines('__main__', '/', lines)
         # Assert
         self.assertListEqual(output, [
-            "use <openscad/lib.scad>",
-            "use <openscad/./simple_test.scad>",
+            "use <LDraw/lib.scad>",
+            "use <LDraw/./simple_test.scad>",
             "function ldraw_lib____main__() = [",
             "// 0 FILE mdp_test.dat",
             "// 0 Simple MPD File",
