@@ -10,23 +10,20 @@ Requires python3, with no external python dependancies:
 
     python ldraw-to-scad.py <ldraw file> <scad file>
 
-Currently it requires the ldraw library in lib/ldraw relative to the working directory you run this from. It may yet need to honour a setting/environment variable to locate the ldraw library.
+Besides this basic parameters several options are available to generate results either as self-contained OpenSCAD files or relying on an LDraw OpenSCAD library that can be generated with this tool as well. Invoke the tool with the --help option for more information.
+
+By default it requires the ldraw library in lib/ldraw relative to the working directory you run this from. Alternatively you can point the tool to a different location for the libray with the --lib option.
 It also (naively) expects the ldraw library filenames to be lowercase.
 
 ## Testing
 
 Install the test-requirements.txt file, then run `pytest .`.
 
-## Still missing
-
-* Colours - things get a number but the colour list is not read in, and the colour 16 protocol isn't yet there.
-* Multipart Dat - currently in development - the ability to have Lego Dat files with multiple parts in the same file (instead of external file references)
-
 ## Making animations
 
 This requires a bit of OpenSCAD knowledge.
 First - ensure you have clearly separated the sections that will move relative to each other.
-For now - until there is mpd support, that means putting them in a couple of separate LDraw DAT files.
+You can put them either in one single MPD file or put them in a couple of separate LDraw DAT files.
 
 You can then add the movement transformations. LDraw actually stores matrices that are relative to the parts origin. You will want to wrap these in simple transformations - like translate and rotate.
 
