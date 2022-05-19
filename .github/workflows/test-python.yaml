@@ -1,6 +1,7 @@
 ---
 name: Test python
-on: [push]
+on: 
+  pull_request:
 jobs:
   test-python:
     runs-on: ubuntu-latest
@@ -11,3 +12,5 @@ jobs:
           python-version: '3.x'
       - run: pip install -r test-requirements.txt
       - run: pytest .
+      - run: python -m pylint *.py
+      - run: python -m pycodestyle *.py
