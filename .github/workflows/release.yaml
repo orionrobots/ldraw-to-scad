@@ -1,12 +1,17 @@
 ---
-name: Test python
-on: 
-  pull_request:
+name: Release pypi package
+on:
+  push:
+    branches:
+      - "!*"
+    tags:
+      - "v*"
 jobs:
-  test-python:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout/@v3
+      - run: sed -i -e "s/^\(version = \).*/\1${GITHUB_REF_NAME/v}/" setup.cfg
       - uses: actions/setup-python@v3
         with:
           python-version: '3.x'
@@ -16,3 +21,8 @@ jobs:
       - run: python -m pylint src tests ldraw2scad
       - run: python -m pycodestyle src tests ldraw2scad
       - run: python -m build
+      - run: pip install twine
+      - run: python -m twine upload dist/* --verbose
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
