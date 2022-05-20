@@ -8,7 +8,7 @@ Intent: Converting LDraw projects to Open SCAD to render, animate or use for oth
 
 Requires python3, with no external python dependancies:
 
-    python ldraw-to-scad.py <ldraw file> <scad file>
+    ldraw2scad <ldraw file> <scad file>
 
 Besides this basic parameters several options are available to generate results either as self-contained OpenSCAD files or relying on an LDraw OpenSCAD library that can be generated with this tool as well. Invoke the tool with the --help option for more information.
 
@@ -17,7 +17,7 @@ It also (naively) expects the ldraw library filenames to be lowercase.
 
 ## Testing
 
-Install the test-requirements.txt file, then run `pytest .`.
+Install the test-requirements.txt file, then run `pip install -e .` and finally `pytest .`.
 
 ## Making animations
 

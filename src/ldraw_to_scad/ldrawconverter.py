@@ -3,7 +3,10 @@
 """ Translate LDraw library or file to OpenSCAD library or file. """
 
 import os
-import argparse
+import pkg_resources
+
+
+LIB_SCAD = pkg_resources.resource_filename(__name__, 'lib.scad')
 
 
 class LDrawConverter:
@@ -237,17 +240,17 @@ class LDrawConverter:
                     fdw.write(result)
         self.queue[1].clear()
 
-    def convert_lib(self, selfcontained=False):
+    def convert_lib(self, self_contained=False):
         """ Convert the whole library """
         for name in self.index:
             self.enqueue(name)
-        if selfcontained:
+        if self_contained:
             with open(os.path.join(self.settings['scadlibs'],
                                    self.settings['scadlibname']+'.scad'),
                       'w', encoding="utf-8") as fdw:
                 self.settings['selfcontained'] = fdw
                 fdw.write(self.colorfile())
-                with open('lib.scad', encoding="utf-8") as filedata:
+                with open(LIB_SCAD, encoding="utf-8") as filedata:
                     lines = filedata.readlines()
                 fdw.write(''.join(lines))
                 self.process_queue()
@@ -255,7 +258,7 @@ class LDrawConverter:
             os.makedirs(os.path.join(self.settings['scadlibs'],
                                      self.settings['scadlibname']),
                         exist_ok=True)
-            with open('lib.scad', encoding="utf-8") as filedata:
+            with open(LIB_SCAD, encoding="utf-8") as filedata:
                 lines = filedata.readlines()
             with open(os.path.join(self.settings['scadlibs'],
                                    self.settings['scadlibname'], 'lib.scad'),
@@ -269,14 +272,14 @@ class LDrawConverter:
                 fdw.write(self.colorfile())
             self.process_queue()
 
-    def convert_file(self, ldrfile, scadfile, selfcontained=False):
+    def convert_file(self, ldrfile, scadfile, self_contained=False):
         """ Convert a single file """
         self.enqueue('__main__', '/', ldrfile, scadfile)
-        if selfcontained:
+        if self_contained:
             with open(scadfile, 'w', encoding="utf-8") as fdw:
                 self.settings['selfcontained'] = fdw
                 fdw.write(self.colorfile())
-                with open('lib.scad', encoding="utf-8") as filedata:
+                with open(LIB_SCAD, encoding="utf-8") as filedata:
                     lines = filedata.readlines()
                 fdw.write(''.join(lines))
                 fdw.write('makepoly(ldraw_lib____main__(), '
@@ -284,81 +287,3 @@ class LDrawConverter:
                 self.process_queue()
         else:
             self.process_queue()
-
-
-def translatedir(converter, src, dest, selfcontained=False):
-    """ translate a whole model directory """
-    types = ['.mpd', '.ldr', '.dat']
-    lst = {}
-    for fdir, _, files in os.walk(src, followlinks=True):
-        rel = os.path.relpath(fdir, src)
-        for file in sorted(files):
-            base, ext = os.path.splitext(file)
-            key = os.path.join(rel, base)
-            if ext in types:
-                if key in lst:
-                    print(f'Skipping {os.path.join(src, key+lst[key])}')
-                lst[key] = ext
-    for key, value in lst.items():
-        print(f'Translating {os.path.join(src,key+value)}'
-              f' to {os.path.join(dest,key+".scad")}...')
-        converter.convert_file(os.path.join(src, key+value),
-                               os.path.join(dest, key+".scad"),
-                               selfcontained)
-
-
-def main():
-    """ Main function """
-    parser = argparse.ArgumentParser(
-        description='Convert an LDraw part to OpenSCAD')
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        '-t', '--translib', action='store_true',
-        help='translate the library')
-    parser.add_argument(
-        '-s', '--selfcontained', action='store_true',
-        help='create self-contained files')
-    parser.add_argument(
-        '-u', '--uncommented', action='store_true',
-        help='create uncommented files')
-    group.add_argument('ldraw_file', nargs='?', metavar='FILENAME',
-                       help='source file to translate')
-    parser.add_argument('output_file', nargs='?', metavar='OUTPUT_FILENAME',
-                        help='name of the translated file')
-    parser.add_argument(
-        '-l', '--lib', default=os.path.join('lib', 'ldraw'), metavar='LIB_DIR',
-        help='location of the LDraw parts library')
-    parser.add_argument(
-        '-o', '--openscadlibs', default='.', metavar='OPENSCAD_LIB_DIR',
-        help='location of the OpenSCAD libraries')
-    parser.add_argument(
-        '-n', '--libname', default='LDraw', metavar='LIB_NAME',
-        help='name of the OpenSCAD library')
-    parser.add_argument(
-        '--line', default=0.2, type=float, metavar='LINE_WIDTH',
-        help='width of lines, 0 for no lines')
-    args = parser.parse_args()
-    converter = LDrawConverter(libdir=args.lib)
-    converter.set('scadlibs', args.openscadlibs)
-    converter.set('scadlibname', args.libname)
-    converter.set('line', args.line)
-    converter.set('commented', not args.uncommented)
-    if args.translib:
-        print("Translating library...")
-        converter.convert_lib(args.selfcontained)
-    else:
-        if os.path.isdir(args.ldraw_file):
-            translatedir(
-                converter, args.ldraw_file,
-                args.output_file if args.output_file else args.ldraw_file,
-                args.selfcontained)
-        else:
-            scadfile = args.output_file if args.output_file else \
-                       os.path.splitext(args.ldraw_file)[0] + '.scad'
-            print(f"Translating {args.ldraw_file} to {scadfile}...")
-            converter.convert_file(args.ldraw_file, scadfile,
-                                   args.selfcontained)
-
-
-if __name__ == '__main__':
-    main()

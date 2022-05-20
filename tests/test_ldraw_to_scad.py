@@ -1,10 +1,13 @@
-""" test cases for ldraw_to_scad.py """
+""" test cases for ldraw_to_scad """
 
 from unittest import TestCase
 import os
 import mock
 
 from ldraw_to_scad import LDrawConverter
+
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestModule(TestCase):
@@ -201,7 +204,7 @@ class TestLDrawConverter(TestCase):
     def test_reading_file(self):
         """ test conversion of file content """
         # Setup
-        test_file = "simple_test.dat"
+        test_file = os.path.join(THIS_DIR, "simple_test.dat")
         # test
         converter = LDrawConverter()
         with open(test_file, encoding="utf-8") as fdr:
@@ -311,7 +314,7 @@ class TestLDrawConverter(TestCase):
     def test_loading_an_mpd(self):
         """ test a complete MPD file """
         # Setup
-        mpd_filename = "mpd_test.dat"
+        mpd_filename = os.path.join(THIS_DIR, "mpd_test.dat")
         # Test
         converter = LDrawConverter()
         with open(mpd_filename, encoding="utf-8") as fdr:
