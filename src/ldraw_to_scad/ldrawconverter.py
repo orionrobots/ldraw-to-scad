@@ -67,13 +67,11 @@ class LDrawConverter:
                     colors.append(
                         f'(id=={data["CODE"]}) ? ["{data["VALUE"]}{alpha:02X}'
                         f'","{data["EDGE"]}"] : (')
-            colors.append('(id>=2*16^6) ? [str("#"')
-            for i in reversed(range(6)):
-                colors.append(f',"0123456789ABCDEF"[id/(16^{i})%16]')
-            colors.append('),str("#"')
-            for i in reversed(range(6)):
-                colors.append(f',"FEDCBA9876543210"[id/(16^{i})%16]')
-            colors.append(')] : ("UNKNOWN"'+')'*(len(colors)-13)+';')
+            colors.append('(id>=2*16^6) ? [chr(35, [for (i=[5:-1:0])'
+                          'let(n=floor(id/16^i)%16) n+(n<10?48:55)]),'
+                          'chr(35, [for (i=[5:-1:0])'
+                          'let(n=15-floor(id/16^i)%16) n+(n<10?48:55)])] :'
+                          '"UNKNOWN"'+')'*len(colors)+';')
             coltxt += '\n'.join(colors) + '\n'
         return coltxt
 
