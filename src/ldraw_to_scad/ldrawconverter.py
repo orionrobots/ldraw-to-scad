@@ -67,7 +67,13 @@ class LDrawConverter:
                     colors.append(
                         f'(id=={data["CODE"]}) ? ["{data["VALUE"]}{alpha:02X}'
                         f'","{data["EDGE"]}"] : (')
-            colors.append('"UNKNOWN"'+')'*len(colors)+';')
+            colors.append('(id>=2*16^6) ? [str("#"')
+            for i in reversed(range(6)):
+                colors.append(f',"0123456789ABCDEF"[id/(16^{i})%16]')
+            colors.append('),str("#"')
+            for i in reversed(range(6)):
+                colors.append(f',"FEDCBA9876543210"[id/(16^{i})%16]')
+            colors.append(')] : ("UNKNOWN"'+')'*(len(colors)-13)+';')
             coltxt += '\n'.join(colors) + '\n'
         return coltxt
 
@@ -167,10 +173,14 @@ class LDrawConverter:
             self.convert_line_0(result, params, stripped)
         elif params[0] == "1":
             self.add_dep(params[14])
+            if params[1][0:3] == '0x2':
+                params[1] = str(int(params[1], 0))
             result.append(
                 f"  [{','.join(params[:14])}, "
                 f"{LDrawConverter.make_function_name(params[14])}],")
         elif params[0] in ["2", "3", "4", "5"]:
+            if params[1][0:3] == '0x2':
+                params[1] = str(int(params[1], 0))
             outparams = params[:{'2': 8, '3': 11, '4': 14, '5': 14}[params[0]]]
             result.append(f"  [{','.join(outparams)}],")
         return result
