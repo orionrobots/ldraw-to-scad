@@ -16,10 +16,10 @@ class TestModule(TestCase):
         """ Module names must be valid c identifiers """
         # setup
         function_names_to_convert = [
-            ["stud.dat", "ldraw_lib__stud()"],
-            ["s\\stuff.dat", "ldraw_lib__s__stuff()"],
-            ["4744.dat", "ldraw_lib__4744()"],
-            ["2-4cyli.dat", "ldraw_lib__2_4cyli()"]
+            ["stud.dat", "ldraw_lib__stud"],
+            ["s\\stuff.dat", "ldraw_lib__s__stuff"],
+            ["4744.dat", "ldraw_lib__4744"],
+            ["2-4cyli.dat", "ldraw_lib__2_4cyli"]
         ]
         # test
         # assert
@@ -198,7 +198,11 @@ class TestLDrawConverter(TestCase):
             ("  [4,16,0.7071,1,0.7071,0.3827,1,0.9239,"
              "0.3827,0,0.9239,0.7071,0,0.7071],"),
             "];",
-            "makepoly(ldraw_lib____main__(), line=0.2);"
+            ("module ldraw_lib____main__(step=0, col=false, unit=2/5, "
+             "alt=false, line=0.2, solid=!$preview)"),
+            ("    makepoly(ldraw_lib____main__(), step=step, col=col, "
+             "unit=unit, alt=alt, line=line, solid=solid);"),
+            "ldraw_lib____main__(line=0.2);"
         ])
 
     def test_reading_file(self):
@@ -223,7 +227,11 @@ class TestLDrawConverter(TestCase):
             "  [4,16,1,1,1,1,1,-1,-1,1,-1,-1,1,1],",
             "// ",
             "];",
-            "makepoly(ldraw_lib____main__(), line=0.2);"
+            ("module ldraw_lib____main__(step=0, col=false, unit=2/5, "
+             "alt=false, line=0.2, solid=!$preview)"),
+            ("    makepoly(ldraw_lib____main__(), step=step, col=col, "
+             "unit=unit, alt=alt, line=line, solid=solid);"),
+            "ldraw_lib____main__(line=0.2);"
         ])
 
     def test_it_process_type_1_line_into_function(self):
@@ -245,7 +253,11 @@ class TestLDrawConverter(TestCase):
                 ("  [1,16,25,24,23,22,21,20,19,18,17,16,15,14, "
                  "ldraw_lib__simple_test()],"),
                 "];",
-                "makepoly(ldraw_lib____main__(), line=0.2);"
+                ("module ldraw_lib____main__(step=0, col=false, unit=2/5, "
+                 "alt=false, line=0.2, solid=!$preview)"),
+                ("    makepoly(ldraw_lib____main__(), step=step, col=col, "
+                 "unit=unit, alt=alt, line=line, solid=solid);"),
+                "ldraw_lib____main__(line=0.2);"
             ]
         )
 
@@ -271,7 +283,11 @@ class TestLDrawConverter(TestCase):
             ("  [1,16,2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8,1.7,1.6,1.5,1.4, "
              "ldraw_lib__simple_test()],"),
             "];",
-            "makepoly(ldraw_lib____main__(), line=0.2);"
+            ("module ldraw_lib____main__(step=0, col=false, unit=2/5, "
+             "alt=false, line=0.2, solid=!$preview)"),
+            ("    makepoly(ldraw_lib____main__(), step=step, col=col, "
+             "unit=unit, alt=alt, line=line, solid=solid);"),
+            "ldraw_lib____main__(line=0.2);"
         ])
 
     def test_try_simplest_mpd(self):
@@ -308,7 +324,11 @@ class TestLDrawConverter(TestCase):
             "];",
             "function ldraw_lib__dummy_2() = [",
             "];",
-            "makepoly(ldraw_lib____main__(), line=0.2);"
+            ("module ldraw_lib____main__(step=0, col=false, unit=2/5, "
+             "alt=false, line=0.2, solid=!$preview)"),
+            ("    makepoly(ldraw_lib____main__(), step=step, col=col, "
+             "unit=unit, alt=alt, line=line, solid=solid);"),
+            "ldraw_lib____main__(line=0.2);"
         ])
 
     def test_loading_an_mpd(self):
@@ -351,6 +371,14 @@ class TestLDrawConverter(TestCase):
             "];",
             "function ldraw_lib__dummy_2() = [",
             "];",
-            "makepoly(ldraw_lib____main__(), line=0.2);",
-            "function ldraw_lib__mdp_test() = ldraw_lib____main__();\n"
+            ("module ldraw_lib____main__(step=0, col=false, unit=2/5, "
+             "alt=false, line=0.2, solid=!$preview)"),
+            ("    makepoly(ldraw_lib____main__(), step=step, col=col, "
+             "unit=unit, alt=alt, line=line, solid=solid);"),
+            "ldraw_lib____main__(line=0.2);",
+            "function ldraw_lib__mdp_test() = ldraw_lib____main__();",
+            ("module ldraw_lib__mdp_test(step=0, col=false, unit=2/5, "
+             "alt=false, line=0.2, solid=!$preview)"),
+            ("    ldraw_lib____main__(step=step, col=col, unit=unit, "
+             "alt=alt, line=line, solid=solid);")
         ])

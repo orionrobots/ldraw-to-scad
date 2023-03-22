@@ -137,7 +137,7 @@ class LDrawConverter:
         function_name = name.lower().split('.', 1)[0]
         function_name = function_name.replace('\\', '__').replace('-', '_').\
             replace(' ', '_')
-        return 'ldraw_lib__' + function_name + '()'
+        return 'ldraw_lib__' + function_name
 
     def convert_line_0(self, result, params, stripped):
         """ Translate a '0' line. """
@@ -153,12 +153,12 @@ class LDrawConverter:
             else:
                 result.append("];")
                 intfile_name = LDrawConverter.make_function_name(intfile)
-                result.append(f"function {intfile_name} = [")
+                result.append(f"function {intfile_name}() = [")
         if len(params) >= 2 and params[1] == 'NOFILE':
             intfile = self.get_dummy()
             result.append("];")
             intfile_name = LDrawConverter.make_function_name(intfile)
-            result.append(f"function {intfile_name} = [")
+            result.append(f"function {intfile_name}() = [")
 
     def convert_line(self, part_line):
         """ Translate a single line. """
@@ -175,7 +175,7 @@ class LDrawConverter:
                 params[1] = str(int(params[1], 0))
             result.append(
                 f"  [{','.join(params[:14])}, "
-                f"{LDrawConverter.make_function_name(params[14])}],")
+                f"{LDrawConverter.make_function_name(params[14])}()],")
         elif params[0] in ["2", "3", "4", "5"]:
             if params[1][0:3] == '0x2':
                 params[1] = str(int(params[1], 0))
@@ -201,17 +201,24 @@ class LDrawConverter:
         if self.settings['selfcontained']:
             for file in self.get_deps():
                 self.enqueue(file, path)
-            result = [f"function {function_name} = ["] + result + ["];"]
+            result = [f"function {function_name}() = ["] + result + ["];"]
         else:
             result = [self.include(['lib'], path)] + \
                      [self.include(self.find_part(name), path)
                       for name in sorted(self.get_deps())] + \
-                     [f"function {function_name} = ["] + result + ["];"] + \
-                     [f"makepoly({function_name}, "
-                      f"line={self.settings['line']});"]
+                     [f"function {function_name}() = ["] + result + ["];"] + \
+                     [f"module {function_name}(step=0, col=false, unit=2/5, "
+                      f"alt=false, line=0.2, solid=!$preview)"] + \
+                     [f"    makepoly({function_name}(), step=step, col=col, "
+                      f"unit=unit, alt=alt, line=line, solid=solid);"] + \
+                     [f"{function_name}(line={self.settings['line']});"]
         if self.mpd_main and self.mpd_main != name:
             main_function = LDrawConverter.make_function_name(self.mpd_main)
-            result.append(f"function {main_function} = {function_name};\n")
+            result.append(f"function {main_function}() = {function_name}();")
+            result.append(f"module {main_function}(step=0, col=false, "
+                          f"unit=2/5, alt=false, line=0.2, solid=!$preview)")
+            result.append(f"    {function_name}(step=step, col=col, "
+                          f"unit=unit, alt=alt, line=line, solid=solid);")
         return result
 
     def enqueue(self, name, path=None, ldrfile=None, scadfile=None):
