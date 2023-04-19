@@ -136,7 +136,7 @@ class LDrawConverter:
         """ Calculate OpenSCAD name from LDraw name. """
         function_name = name.lower().split('.', 1)[0]
         function_name = function_name.replace('\\', '__').replace('-', '_').\
-            replace(' ', '_')
+            replace('+', '_').replace(' ', '_')
         return 'ldraw_lib__' + function_name
 
     def convert_line_0(self, result, params, stripped):
