@@ -170,12 +170,13 @@ class LDrawConverter:
         if params[0] == "0":
             self.convert_line_0(result, params, stripped)
         elif params[0] == "1":
-            self.add_dep(params[14])
+            keyname = params[14].replace('/', '\\')
+            self.add_dep(keyname)
             if params[1][0:3] == '0x2':
                 params[1] = str(int(params[1], 0))
             result.append(
                 f"  [{','.join(params[:14])}, "
-                f"{LDrawConverter.make_function_name(params[14])}()],")
+                f"{LDrawConverter.make_function_name(keyname)}()],")
         elif params[0] in ["2", "3", "4", "5"]:
             if params[1][0:3] == '0x2':
                 params[1] = str(int(params[1], 0))
