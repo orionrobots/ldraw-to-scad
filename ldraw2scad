@@ -24,8 +24,8 @@ def translate_dir(converter, src, dest, self_contained=False):
                     print(f'Skipping {os.path.join(src, key+lst[key])}')
                 lst[key] = ext
     for key, value in lst.items():
-        print(f'Translating {os.path.join(src,key+value)}'
-              f' to {os.path.join(dest,key+".scad")}...')
+        print(f'Translating {os.path.join(src, key+value)}'
+              f' to {os.path.join(dest, key+".scad")}...')
         converter.convert_file(os.path.join(src, key+value),
                                os.path.join(dest, key+".scad"),
                                self_contained)
