@@ -3,10 +3,7 @@
 """ Translate LDraw library or file to OpenSCAD library or file. """
 
 import os
-import pkg_resources
-
-
-LIB_SCAD = pkg_resources.resource_filename(__name__, 'lib.scad')
+import importlib_resources
 
 
 class LDrawConverter:
@@ -260,22 +257,25 @@ class LDrawConverter:
         """ Convert the whole library """
         for name in self.index:
             self.enqueue(name)
+        libref = importlib_resources.files(__name__) / 'lib.scad'
         if self_contained:
             with open(os.path.join(self.settings['scadlibs'],
                                    self.settings['scadlibname']+'.scad'),
                       'w', encoding="utf-8") as fdw:
                 self.settings['selfcontained'] = fdw
                 fdw.write(self.colorfile())
-                with open(LIB_SCAD, encoding="utf-8") as filedata:
-                    lines = filedata.readlines()
+                with importlib_resources.as_file(libref) as libpath:
+                    with open(libpath, encoding="utf-8") as filedata:
+                        lines = filedata.readlines()
                 fdw.write(''.join(lines))
                 self.process_queue()
         else:
             os.makedirs(os.path.join(self.settings['scadlibs'],
                                      self.settings['scadlibname']),
                         exist_ok=True)
-            with open(LIB_SCAD, encoding="utf-8") as filedata:
-                lines = filedata.readlines()
+            with importlib_resources.as_file(libref) as libpath:
+                with open(libpath, encoding="utf-8") as filedata:
+                    lines = filedata.readlines()
             with open(os.path.join(self.settings['scadlibs'],
                                    self.settings['scadlibname'], 'lib.scad'),
                       'w', encoding="utf-8") as fdw:
@@ -295,8 +295,10 @@ class LDrawConverter:
             with open(scadfile, 'w', encoding="utf-8") as fdw:
                 self.settings['selfcontained'] = fdw
                 fdw.write(self.colorfile())
-                with open(LIB_SCAD, encoding="utf-8") as filedata:
-                    lines = filedata.readlines()
+                libref = importlib_resources.files(__name__) / 'lib.scad'
+                with importlib_resources.as_file(libref) as libpath:
+                    with open(libpath, encoding="utf-8") as filedata:
+                        lines = filedata.readlines()
                 fdw.write(''.join(lines))
                 fdw.write('makepoly(ldraw_lib____main__(), '
                           f"line={self.settings['line']});\n")

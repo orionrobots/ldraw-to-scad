@@ -3,3 +3,4 @@ mock
 pylint
 pycodestyle
 build
+importlib_resources
