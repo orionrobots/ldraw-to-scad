@@ -51,13 +51,15 @@ class LDrawConverter:
                             skip = False
                             continue
                         if opt in ['CODE', 'VALUE', 'ALPHA', 'LUMINANCE',
-                                   'EDGE', 'SIZE', 'MINSIZE', 'MAXSIZE',
-                                   'FRACTION', 'VFRACTION', 'MATERIAL']:
+                                   'EDGE']:
                             data[opt] = params[pos+4]
                             skip = True
                         elif opt in ['METAL', 'RUBBER', 'PEARLESCENT',
-                                     'CHROME']:
+                                     'CHROME', 'MATTE_METALLIC']:
                             data[opt] = True
+                        elif opt == 'MATERIAL':
+                            data[opt] = params[pos+1:]
+                            break
                         else:
                             print(f'Unknown !COLOUR option {opt}!')
                     alpha = int(data["ALPHA"]) if "ALPHA" in data else 255
