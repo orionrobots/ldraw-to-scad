@@ -224,6 +224,8 @@ class LDrawConverter:
     def enqueue(self, name, path=None, ldrfile=None, scadfile=None):
         """ enqueue a file to be processed """
         if name not in self.queue[1]:
+            lpath = None
+            base = None
             if not ldrfile:
                 lpath, base = self.find_part(name)
             self.queue[0][name] = (
